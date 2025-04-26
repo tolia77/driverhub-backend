@@ -1,0 +1,142 @@
+import pytest
+from fastapi.testclient import TestClient
+from sqlalchemy.orm import Session
+from app.main import app
+from app.models import User, Client
+from app.schemas.client import ClientSignup
+from app.schemas.user import UserLogin
+from app.utils.security import hash_password
+
+client = TestClient(app)
+
+# Test data
+TEST_CLIENT = {
+    "email": "test@example.com",
+    "password": "testpass123",
+    "first_name": "Test",
+    "last_name": "User",
+    "phone_number": "1234567890"
+}
+
+TEST_LOGIN = {
+    "email": "test@example.com",
+    "password": "testpass123"
+}
+
+
+# Fixtures
+@pytest.fixture
+def test_client(db_session: Session):
+    # Create a test client
+    hashed_password = hash_password(TEST_CLIENT["password"])
+    client = Client(
+        email=TEST_CLIENT["email"],
+        password_hash=hashed_password,
+        first_name=TEST_CLIENT["first_name"],
+        last_name=TEST_CLIENT["last_name"],
+        phone_number=TEST_CLIENT["phone_number"],
+    )
+    db_session.add(client)
+    db_session.commit()
+    return client
+
+
+# Tests
+def test_login_success(db_session: Session, test_client: Client):
+    response = client.post(
+        "/auth/login",
+        json=TEST_LOGIN,
+    )
+
+    assert response.status_code == 200
+    assert "access_token" in response.json()
+    assert response.json()["token_type"] == "bearer"
+
+
+def test_login_invalid_credentials(db_session: Session):
+    response = client.post(
+        "/auth/login",
+        json={"email": "wrong@example.com", "password": "wrongpass"},
+    )
+
+    assert response.status_code == 401
+    assert response.json()["detail"] == "Invalid credentials"
+
+
+def test_signup_success(db_session: Session):
+    new_user = {
+        "email": "new@example.com",
+        "password": "newpass123",
+        "first_name": "New",
+        "last_name": "User",
+        "phone_number": "9876543210"
+    }
+
+    response = client.post(
+        "/auth/signup",
+        json=new_user,
+    )
+
+    assert response.status_code == 201
+    assert response.json()["message"] == "User created successfully"
+    assert response.json()["email"] == new_user["email"]
+
+    # Verify user was created in database
+    db_user = db_session.query(User).filter_by(email=new_user["email"]).first()
+    assert db_user is not None
+
+
+def test_signup_duplicate_email(db_session: Session, test_client: Client):
+    response = client.post(
+        "/auth/signup",
+        json=TEST_CLIENT,
+    )
+
+    assert response.status_code == 400
+    assert response.json()["detail"] == "A user with this email already exists"
+
+
+def test_get_me(db_session: Session, test_client: Client):
+    # First login to get token
+    login_response = client.post(
+        "/auth/login",
+        json=TEST_LOGIN,
+    )
+    token = login_response.json()["access_token"]
+
+    # Test me endpoint
+    response = client.get(
+        "/auth/me",
+        headers={"Authorization": f"Bearer {token}"},
+    )
+
+    assert response.status_code == 200
+    assert response.json()["user"]["email"] == TEST_CLIENT["email"]
+
+
+def test_get_me_unauthorized():
+    response = client.get(
+        "/auth/me",
+        headers={"Authorization": "Bearer invalid_token"},
+    )
+
+    assert response.status_code == 401
+
+
+def test_admin_endpoint_unauthorized(db_session: Session, test_client: Client):
+    # First login to get token (regular user)
+    login_response = client.post(
+        "/auth/login",
+        json=TEST_LOGIN,
+    )
+    token = login_response.json()["access_token"]
+
+    # Test admin endpoint
+    response = client.get(
+        "/auth/admin",
+        headers={"Authorization": f"Bearer {token}"},
+    )
+
+    assert response.status_code == 403
+
+# Note: Add a test for successful admin access once you have admin user creation

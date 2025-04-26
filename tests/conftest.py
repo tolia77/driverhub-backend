@@ -1,34 +1,33 @@
 import pytest
-from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession
+from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 from app.db import Base
 from app.settings import settings
 
-
 @pytest.fixture(scope="session")
 def test_db_engine():
-    engine = create_async_engine(settings.database.test_database_connection_string)
+    engine = create_engine(settings.database.test_database_connection_string)
     yield engine
-    engine.sync_engine.dispose()
-
+    engine.dispose()
 
 @pytest.fixture(scope="session")
-async def setup_test_db(test_db_engine):
-    async with test_db_engine.begin() as conn:
-        await conn.run_sync(Base.metadata.create_all)
+def setup_test_db(test_db_engine):
+    Base.metadata.create_all(bind=test_db_engine)
     yield
-    async with test_db_engine.begin() as conn:
-        await conn.run_sync(Base.metadata.drop_all)
-
+    Base.metadata.drop_all(bind=test_db_engine)
 
 @pytest.fixture
-async def db_session(test_db_engine, setup_test_db):
-    async_session = sessionmaker(
-        test_db_engine,
-        class_=AsyncSession,
-        expire_on_commit=False,
-    )
+def db_session(test_db_engine, setup_test_db):
+    Session = sessionmaker(bind=test_db_engine)
+    session = Session()
+    yield session
+    session.rollback()
+    session.close()
 
-    async with async_session() as session:
-        yield session
-        await session.rollback()
+@pytest.fixture(autouse=True)
+def clean_tables(db_session):
+    """Clean all tables after each test"""
+    yield
+    for table in reversed(Base.metadata.sorted_tables):
+        db_session.execute(table.delete())
+    db_session.commit()

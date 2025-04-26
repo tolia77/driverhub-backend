@@ -10,7 +10,7 @@ async def get_current_user(token: str = Depends(oauth2_scheme)):
     payload = decode_access_token(token)
     if not payload or "sub" not in payload:
         raise HTTPException(status_code=401, detail="Invalid credentials")
-    return {"username": payload["sub"], "type": payload["type"]}
+    return {"email": payload["sub"], "type": payload["type"]}
 
 
 def require_role(required_role: str):

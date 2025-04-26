@@ -1,19 +1,14 @@
 from fastapi import Depends, HTTPException, APIRouter
-from fastapi.security import OAuth2PasswordRequestForm
-from datetime import timedelta
-
 from sqlalchemy.orm import Session
 
+from app.db import get_db
+from app.dependencies import get_current_user, require_role
 from app.models import User, Client
 from app.schemas.client import ClientSignup
 from app.schemas.user import UserLogin
 from app.utils.jwt import create_access_token
-from app.utils.security import verify_password, hash_password
-from app.dependencies import get_current_user, require_role
-from app.db import get_db
+from app.utils.security import hash_password, verify_password
 
-
-ACCESS_TOKEN_EXPIRE_MINUTES = 600
 
 router = APIRouter(prefix="/auth", tags=["auth"])
 
@@ -29,8 +24,7 @@ def login(form_data: UserLogin, db: Session = Depends(get_db)):
     if not user:
         raise HTTPException(status_code=401, detail="Invalid credentials")
     token = create_access_token(
-        {"id": user.id, "sub": user.email, "type": user.type},
-        expires_delta=timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
+        {"id": user.id, "sub": user.email, "type": user.type}
     )
     return {"access_token": token, "token_type": "bearer"}
 

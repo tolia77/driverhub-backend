@@ -9,14 +9,15 @@ from app.schemas.user import UserLogin
 from app.utils.jwt import create_access_token
 from app.utils.security import hash_password, verify_password
 
-
 router = APIRouter(prefix="/auth", tags=["auth"])
+
 
 def authenticate_user(email: str, password: str, db: Session):
     user = db.query(User).filter_by(email=email).first()
     if not user or not verify_password(password, user.password_hash):
         return None
     return user
+
 
 @router.post("/login")
 def login(form_data: UserLogin, db: Session = Depends(get_db)):
@@ -28,9 +29,9 @@ def login(form_data: UserLogin, db: Session = Depends(get_db)):
     )
     return {"access_token": token, "token_type": "bearer"}
 
+
 @router.post("/signup", status_code=status.HTTP_201_CREATED)
 def signup(client: ClientSignup, db: Session = Depends(get_db)):
-
     db_user = db.query(User).filter(User.email == client.email).first()
     if db_user:
         raise HTTPException(status_code=400, detail="A user with this email already exists")
@@ -51,9 +52,11 @@ def signup(client: ClientSignup, db: Session = Depends(get_db)):
 
     return {"message": "User created successfully", "email": new_user.email}
 
+
 @router.get("/me")
-def read_me(current_user = Depends(get_current_user)):
+def read_me(current_user=Depends(get_current_user)):
     return {"user": current_user}
+
 
 @router.get("/admin", dependencies=[Depends(require_role("admin"))])
 def admin_only():

@@ -12,9 +12,11 @@ async def get_current_user(token: str = Depends(oauth2_scheme)):
         raise HTTPException(status_code=401, detail="Invalid credentials")
     return {"username": payload["sub"], "type": payload["type"]}
 
+
 def require_role(required_role: str):
-    def wrapper(user = Depends(get_current_user)):
-        if  user["type"] != "admin" and user["type"] != required_role:
+    def wrapper(user=Depends(get_current_user)):
+        if user["type"] != "admin" and user["type"] != required_role:
             raise HTTPException(status_code=403, detail="Insufficient privileges")
         return user
+
     return wrapper

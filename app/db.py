@@ -12,6 +12,7 @@ Base = declarative_base()
 engine = create_engine(DATABASE_URL, echo=True, future=True)
 SessionLocal = sessionmaker(bind=engine, autocommit=False, autoflush=False)
 
+
 def get_db():
     db = SessionLocal()
     try:

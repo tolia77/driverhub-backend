@@ -1,4 +1,4 @@
-from fastapi import Depends, HTTPException, APIRouter
+from fastapi import Depends, HTTPException, APIRouter, status
 from sqlalchemy.orm import Session
 
 from app.db import get_db
@@ -28,12 +28,12 @@ def login(form_data: UserLogin, db: Session = Depends(get_db)):
     )
     return {"access_token": token, "token_type": "bearer"}
 
-@router.post("/signup")
+@router.post("/signup", status_code=status.HTTP_201_CREATED)
 def signup(client: ClientSignup, db: Session = Depends(get_db)):
 
     db_user = db.query(User).filter(User.email == client.email).first()
     if db_user:
-        raise HTTPException(status_code=400, detail="Username already registered")
+        raise HTTPException(status_code=400, detail="A user with this email already exists")
 
     hashed_password = hash_password(client.password)
 

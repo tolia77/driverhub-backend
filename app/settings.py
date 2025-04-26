@@ -10,9 +10,12 @@ class BaseConfig(BaseSettings):
 class DatabaseConfig(BaseConfig):
     database_connection_string: str
 
+class JWTConfig(BaseConfig):
+    jwt_secret: str
+    jwt_expires_in_minutes: int
 
 class Settings(BaseSettings):
     database: DatabaseConfig = Field(default_factory=DatabaseConfig)
-
+    jwt: JWTConfig = Field(default_factory=JWTConfig)
 
 settings = Settings()

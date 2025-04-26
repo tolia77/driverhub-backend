@@ -4,8 +4,8 @@ from jose import jwt, JWTError
 
 from app.settings import settings
 
-SECRET_KEY = settings.JWT_SECRET
-EXPIRES_IN_MINUTES = settings.JWT_EXPIRES_IN_MINUTES
+SECRET_KEY = settings.jwt.jwt_secret
+EXPIRES_IN_MINUTES = settings.jwt.jwt_expires_in_minutes
 ALGORITHM = "HS256"
 
 def create_access_token(data: dict, expires_delta: Optional[timedelta] = EXPIRES_IN_MINUTES):

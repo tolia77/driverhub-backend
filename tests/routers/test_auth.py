@@ -75,7 +75,6 @@ def test_client(db_session: Session):
 
 # Tests
 def test_login_success(db_session: Session, test_login: Client):
-    print(db_session.query(User).all()[0].email)
     response = client.post(
         "/auth/login",
         json=TEST_LOGIN,
@@ -113,7 +112,6 @@ def test_signup_success(db_session: Session):
 
     assert response.status_code == 201
     assert response.json()["message"] == "User created successfully"
-    print(db_session.query(User).all())
     db_user = db_session.query(User).filter_by(email=unique_email).first()
     assert db_user is not None
 

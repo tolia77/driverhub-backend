@@ -1,8 +1,9 @@
 import pytest
 from fastapi.testclient import TestClient
 from sqlalchemy.orm import Session
+
 from app.main import app
-from app.models import Driver, Dispatcher, User, Vehicle
+from app.models import Driver, Dispatcher, Vehicle
 from app.utils.security import hash_password
 
 client = TestClient(app)

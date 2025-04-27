@@ -1,4 +1,6 @@
 # tests/test_auth.py
+from urllib import response
+
 import pytest
 from fastapi.testclient import TestClient
 from sqlalchemy.orm import Session
@@ -90,11 +92,7 @@ def test_signup_success(db_session: Session):
 
     assert response.status_code == 201
     assert response.json()["message"] == "User created successfully"
-
-    # Оновлюємо стан сесії для отримання свіжих даних
-    db_session.expire_all()
-
-    # Перевіряємо чи користувач дійсно створився
+    print(db_session.query(User).all())
     db_user = db_session.query(User).filter_by(email=unique_email).first()
     assert db_user is not None
 

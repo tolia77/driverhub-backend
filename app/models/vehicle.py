@@ -4,7 +4,6 @@ from sqlalchemy import Integer, String, Date
 from sqlalchemy.orm import mapped_column, Mapped, relationship
 
 from app.db import Base
-from app.models import Driver
 
 
 class Vehicle(Base):

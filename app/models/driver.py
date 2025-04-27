@@ -2,7 +2,6 @@ from sqlalchemy import String, ForeignKey
 from sqlalchemy.orm import mapped_column, Mapped, relationship
 
 from app.models import User
-from app.models.vehicle import Vehicle
 
 
 class Driver(User):

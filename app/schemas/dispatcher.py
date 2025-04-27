@@ -1,26 +1,13 @@
-from pydantic import BaseModel, ConfigDict
-from typing import Optional
+from app.schemas.user import UserCreate, UserRead, UserUpdate
 
 
-class DispatcherCreate(BaseModel):
-    email: str
-    password: str
-    first_name: str
-    last_name: str
-
-    model_config = ConfigDict(from_attributes=True)
+class DispatcherCreate(UserCreate):
+    pass
 
 
-class DispatcherRead(BaseModel):
-    id: int
-    email: str
-    first_name: str
-    last_name: str
-
-    model_config = ConfigDict(from_attributes=True)
+class DispatcherRead(UserRead):
+    pass
 
 
-class DispatcherUpdate(BaseModel):
-    first_name: Optional[str] = None
-    last_name: Optional[str] = None
-    model_config = ConfigDict(from_attributes=True)
+class DispatcherUpdate(UserUpdate):
+    pass

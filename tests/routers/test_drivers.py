@@ -2,7 +2,7 @@ import pytest
 from fastapi.testclient import TestClient
 from sqlalchemy.orm import Session
 from app.main import app
-from app.models import Driver, Dispatcher, User
+from app.models import Driver, Dispatcher, User, Vehicle
 from app.utils.security import hash_password
 
 client = TestClient(app)
@@ -21,6 +21,21 @@ TEST_DISPATCHER = {
     "first_name": "Dispatcher",
     "last_name": "Test"
 }
+
+TEST_VEHICLE = {
+    "model": "Tesla Model 3",
+    "license_plate": "AA1234BB",
+    "capacity": 5,
+    "mileage": 15000
+}
+
+
+@pytest.fixture
+def test_vehicle(db_session: Session):
+    vehicle = Vehicle(**TEST_VEHICLE)
+    db_session.add(vehicle)
+    db_session.commit()
+    return vehicle
 
 
 @pytest.fixture
@@ -103,6 +118,65 @@ def test_create_driver_duplicate_email(db_session: Session, test_driver, dispatc
 
     assert response.status_code == 400
     assert "already exists" in response.json()["detail"]
+
+
+def test_create_driver_with_vehicle(db_session: Session, dispatcher_auth_headers, test_vehicle):
+    driver_data = {
+        "email": "new.driver@example.com",
+        "password": "newpass123",
+        "first_name": "New",
+        "last_name": "Driver",
+        "license_number": "DL98765432",
+        "vehicle_id": test_vehicle.id
+    }
+
+    response = client.post(
+        "/drivers/",
+        json=driver_data,
+        headers=dispatcher_auth_headers
+    )
+
+    assert response.status_code == 201
+    assert response.json()["vehicle_id"] == test_vehicle.id
+
+    driver = db_session.query(Driver).filter_by(email=driver_data["email"]).first()
+    assert driver.vehicle_id == test_vehicle.id
+
+
+def test_update_driver_vehicle(db_session: Session, test_driver, test_vehicle, dispatcher_auth_headers):
+    new_vehicle = Vehicle(
+        model="Nissan Leaf",
+        license_plate="CC5678DD",
+        capacity=4,
+        mileage=20000
+    )
+    db_session.add(new_vehicle)
+    db_session.commit()
+
+    update_data = {"vehicle_id": new_vehicle.id}
+
+    response = client.put(
+        f"/drivers/{test_driver.id}",
+        json=update_data,
+        headers=dispatcher_auth_headers
+    )
+
+    assert response.status_code == 200
+    db_session.refresh(test_driver)
+    assert test_driver.vehicle_id == new_vehicle.id
+
+
+def test_update_driver_with_invalid_vehicle(db_session: Session, test_driver, dispatcher_auth_headers):
+    update_data = {"vehicle_id": 9999}  # Неіснуючий vehicle_id
+
+    response = client.put(
+        f"/drivers/{test_driver.id}",
+        json=update_data,
+        headers=dispatcher_auth_headers
+    )
+
+    assert response.status_code == 404
+    assert "Vehicle not found" in response.json()["detail"]
 
 
 def test_list_drivers(db_session: Session, test_driver, dispatcher_auth_headers):

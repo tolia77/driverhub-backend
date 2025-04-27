@@ -1,6 +1,3 @@
-# tests/test_auth.py
-from urllib import response
-
 import pytest
 from fastapi.testclient import TestClient
 from sqlalchemy.orm import Session
@@ -25,6 +22,7 @@ TEST_LOGIN = {
     "password": "testpass123"
 }
 
+
 @pytest.fixture()
 def test_login(db_session: Session):
     client_data = {
@@ -46,6 +44,7 @@ def test_login(db_session: Session):
     db_session.add(client)
     db_session.commit()
     return client
+
 
 # Fixtures
 @pytest.fixture

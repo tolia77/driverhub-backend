@@ -29,4 +29,3 @@ def db_session(engine, tables):
     session.close()
     transaction.rollback()
     connection.close()
-

@@ -25,6 +25,27 @@ TEST_LOGIN = {
     "password": "testpass123"
 }
 
+@pytest.fixture()
+def test_login(db_session: Session):
+    client_data = {
+        "email": "test@example.com",
+        "password": "testpass123",
+        "first_name": "Test",
+        "last_name": "User",
+        "phone_number": "1234567890"
+    }
+
+    hashed_password = hash_password(client_data["password"])
+    client = Client(
+        email=client_data["email"],
+        password_hash=hashed_password,
+        first_name=client_data["first_name"],
+        last_name=client_data["last_name"],
+        phone_number=client_data["phone_number"],
+    )
+    db_session.add(client)
+    db_session.commit()
+    return client
 
 # Fixtures
 @pytest.fixture
@@ -54,7 +75,8 @@ def test_client(db_session: Session):
 
 
 # Tests
-def test_login_success(db_session: Session, test_client: Client):
+def test_login_success(db_session: Session, test_login: Client):
+    print(db_session.query(User).all()[0].email)
     response = client.post(
         "/auth/login",
         json=TEST_LOGIN,
@@ -97,7 +119,7 @@ def test_signup_success(db_session: Session):
     assert db_user is not None
 
 
-def test_signup_duplicate_email(db_session: Session, test_client: Client):
+def test_signup_duplicate_email(db_session: Session, test_login: Client):
     response = client.post(
         "/auth/signup",
         json=TEST_CLIENT,
@@ -106,15 +128,13 @@ def test_signup_duplicate_email(db_session: Session, test_client: Client):
     assert response.json()["detail"] == "A user with this email already exists"
 
 
-def test_get_me(db_session: Session, test_client: Client):
-    # First login to get token
+def test_get_me(db_session: Session, test_login: Client):
     login_response = client.post(
         "/auth/login",
         json=TEST_LOGIN,
     )
     token = login_response.json()["access_token"]
 
-    # Test me endpoint
     response = client.get(
         "/auth/me",
         headers={"Authorization": f"Bearer {token}"},
@@ -131,15 +151,13 @@ def test_get_me_unauthorized():
     assert response.status_code == 401
 
 
-def test_admin_endpoint_unauthorized(db_session: Session, test_client: Client):
-    # First login to get token (regular user)
+def test_admin_endpoint_unauthorized(db_session: Session, test_login: Client):
     login_response = client.post(
         "/auth/login",
         json=TEST_LOGIN,
     )
     token = login_response.json()["access_token"]
 
-    # Test admin endpoint
     response = client.get(
         "/auth/admin",
         headers={"Authorization": f"Bearer {token}"},

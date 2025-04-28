@@ -5,7 +5,7 @@ from app.db import get_db
 from app.dependencies import get_current_user, require_role
 from app.models import User, Client
 from app.schemas.client import ClientSignup
-from app.schemas.user import UserLogin
+from app.schemas.user import UserLogin, UserRead
 from app.utils.jwt import create_access_token
 from app.utils.security import hash_password, verify_password
 
@@ -63,9 +63,18 @@ def signup(client: ClientSignup, db: Session = Depends(get_db)):
     return {"message": "User created successfully", "email": new_user.email}
 
 
-@router.get("/me")
-def read_me(current_user=Depends(get_current_user)):
-    return {"user": current_user}
+@router.get("/me", response_model=UserRead)
+def read_me(
+        db: Session = Depends(get_db),
+        current_user: dict = Depends(get_current_user)
+):
+    user = db.query(User).filter(User.id == current_user["id"]).first()
+    if not user:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="User not found"
+        )
+    return user
 
 
 @router.get("/admin", dependencies=[Depends(require_role("admin"))])

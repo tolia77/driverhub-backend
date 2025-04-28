@@ -49,11 +49,17 @@ def create_log_break(
 
 @router.get("/", response_model=List[LogBreakOut])
 def list_log_breaks(
+        delivery_id: int | None = None,
         skip: int = 0,
         limit: int = 100,
         db: Session = Depends(get_db)
 ):
-    return db.query(LogBreak).offset(skip).limit(limit).all()
+    query = db.query(LogBreak)
+
+    if delivery_id is not None:
+        query = query.filter(LogBreak.delivery_id == delivery_id)
+
+    return query.offset(skip).limit(limit).all()
 
 
 @router.get("/{log_break_id}", response_model=LogBreakOut)
@@ -139,3 +145,20 @@ def delete_log_break(
 
     db.delete(log_break)
     db.commit()
+
+
+@router.get("/driver/me",
+            response_model=List[LogBreakOut],
+            dependencies=[Depends(require_role("driver"))])
+def get_my_log_breaks(
+        skip: int = 0,
+        limit: int = 100,
+        db: Session = Depends(get_db),
+        current_user: dict = Depends(get_current_user)
+):
+    return db.query(LogBreak) \
+        .join(Delivery, LogBreak.delivery_id == Delivery.id) \
+        .filter(Delivery.driver_id == current_user["id"]) \
+        .offset(skip) \
+        .limit(limit) \
+        .all()

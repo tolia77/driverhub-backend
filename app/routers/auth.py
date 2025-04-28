@@ -27,7 +27,17 @@ def login(form_data: UserLogin, db: Session = Depends(get_db)):
     token = create_access_token(
         {"id": user.id, "sub": user.email, "type": user.type}
     )
-    return {"access_token": token, "token_type": "bearer"}
+    return {
+        "access_token": token,
+        "token_type": "bearer",
+        "user": {
+            "id": user.id,
+            "email": user.email,
+            "first_name": user.first_name,
+            "last_name": user.last_name,
+            "type": user.type,
+        },
+    }
 
 
 @router.post("/signup", status_code=status.HTTP_201_CREATED)

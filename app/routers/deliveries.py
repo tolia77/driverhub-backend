@@ -140,3 +140,35 @@ def delete_delivery(
 
     db.delete(delivery)
     db.commit()
+
+
+@router.get("/driver/me",
+            response_model=List[DeliveryShow],
+            dependencies=[Depends(require_role("driver"))])
+def get_my_deliveries(
+        skip: int = 0,
+        limit: int = 100,
+        db: Session = Depends(get_db),
+        current_user: dict = Depends(get_current_user)
+):
+    return db.query(Delivery) \
+        .filter(Delivery.driver_id == current_user["id"]) \
+        .offset(skip) \
+        .limit(limit) \
+        .all()
+
+
+@router.get("/client/me",
+            response_model=List[DeliveryShow],
+            dependencies=[Depends(require_role("client"))])
+def get_my_deliveries(
+        skip: int = 0,
+        limit: int = 100,
+        db: Session = Depends(get_db),
+        current_user: dict = Depends(get_current_user)
+):
+    return db.query(Delivery) \
+        .filter(Delivery.client_id == current_user["id"]) \
+        .offset(skip) \
+        .limit(limit) \
+        .all()

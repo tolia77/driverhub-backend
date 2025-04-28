@@ -21,9 +21,6 @@ class UserCreate(UserBase):
 
 class UserRead(UserBase):
     id: int
-    email: EmailStr
-    first_name: str
-    last_name: str
     created_at: datetime
     type: str
 

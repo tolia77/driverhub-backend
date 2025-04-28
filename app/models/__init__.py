@@ -6,3 +6,4 @@ from .admin import Admin
 from .vehicle import Vehicle
 from .delivery import Delivery
 from .log_break import LogBreak
+from .review import Review

@@ -35,7 +35,7 @@ class DeliveryUpdate(BaseModel):
     delivery_notes: Optional[str] = None
 
 
-class DeliveryOut(DeliveryBase):
+class DeliveryShow(DeliveryBase):
     id: int
     created_at: datetime
     model_config = ConfigDict(from_attributes=True)

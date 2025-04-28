@@ -39,3 +39,6 @@ class DeliveryShow(DeliveryBase):
     id: int
     created_at: datetime
     model_config = ConfigDict(from_attributes=True)
+
+class DeliveryStatusUpdate(BaseModel):
+    new_status: DeliveryStatus

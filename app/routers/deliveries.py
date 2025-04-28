@@ -9,7 +9,7 @@ from app.schemas.delivery import (
     DeliveryCreate,
     DeliveryUpdate,
     DeliveryShow,
-    DeliveryStatus
+    DeliveryStatus, DeliveryStatusUpdate
 )
 
 router = APIRouter(prefix="/deliveries", tags=["deliveries"])
@@ -114,7 +114,7 @@ def update_delivery(
               response_model=DeliveryShow)
 def update_delivery_status(
     delivery_id: int,
-    new_status: DeliveryStatus = Body(..., embed=True),
+    new_status: DeliveryStatusUpdate,
     db: Session = Depends(get_db),
     current_user: dict = Depends(get_current_user)
 ):
@@ -137,7 +137,7 @@ def update_delivery_status(
             detail="You can only update status for your assigned deliveries"
         )
 
-    delivery.status = new_status
+    delivery.status = new_status.new_status
     db.commit()
     db.refresh(delivery)
     return delivery

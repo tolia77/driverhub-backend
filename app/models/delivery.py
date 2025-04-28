@@ -32,3 +32,5 @@ class Delivery(Base):
 
     driver: Mapped["Driver"] = relationship("Driver", back_populates="deliveries")
     client: Mapped["Client"] = relationship("Client", back_populates="deliveries")
+
+    breaks: Mapped[list["LogBreak"]] = relationship("LogBreak", back_populates="delivery")

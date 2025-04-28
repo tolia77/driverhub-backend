@@ -12,6 +12,7 @@ class Driver(User):
     vehicle_id: Mapped[int | None] = mapped_column(ForeignKey('vehicles.id'), nullable=True, unique=True)
 
     vehicle: Mapped["Vehicle"] = relationship("Vehicle", back_populates="driver")
+    deliveries: Mapped[list["Delivery"]] = relationship("Delivery", back_populates="driver")
 
     __mapper_args__ = {
         'polymorphic_identity': 'driver',

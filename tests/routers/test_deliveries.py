@@ -211,7 +211,7 @@ def test_update_delivery_success(db_session: Session, dispatcher_auth_headers, t
         "package_details": "Updated details"
     }
 
-    response = client.put(
+    response = client.patch(
         f"/deliveries/{test_delivery.id}",
         json=update_data,
         headers=dispatcher_auth_headers

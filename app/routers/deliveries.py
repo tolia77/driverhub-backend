@@ -65,7 +65,7 @@ def get_delivery(
     return delivery
 
 
-@router.put("/{delivery_id}",
+@router.patch("/{delivery_id}",
             response_model=DeliveryShow,
             dependencies=[Depends(require_role("dispatcher"))])
 def update_delivery(

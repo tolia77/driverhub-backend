@@ -76,7 +76,7 @@ def get_log_break(
     return log_break
 
 
-@router.put("/{log_break_id}",
+@router.patch("/{log_break_id}",
             response_model=LogBreakOut,
             dependencies=[Depends(require_role("driver"))])
 def update_log_break(

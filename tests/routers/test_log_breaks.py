@@ -220,7 +220,7 @@ def test_update_log_break_success(db_session: Session, driver_auth_headers, test
         "cost": 20.00
     }
 
-    response = client.put(
+    response = client.patch(
         f"/log_breaks/{test_log_break.id}",
         json=update_data,
         headers=driver_auth_headers
@@ -238,7 +238,7 @@ def test_update_log_break_success(db_session: Session, driver_auth_headers, test
 def test_update_log_break_unauthorized(db_session: Session, dispatcher_auth_headers, test_log_break):
     update_data = {"location": "Should Fail"}
 
-    response = client.put(
+    response = client.patch(
         f"/log_breaks/{test_log_break.id}",
         json=update_data,
         headers=dispatcher_auth_headers

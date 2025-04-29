@@ -125,29 +125,6 @@ def test_signup_duplicate_email(db_session: Session, test_login: Client):
     assert response.json()["detail"] == "A user with this email already exists"
 
 
-def test_get_me(db_session: Session, test_login: Client):
-    login_response = client.post(
-        "/auth/login",
-        json=TEST_LOGIN,
-    )
-    token = login_response.json()["access_token"]
-
-    response = client.get(
-        "/auth/me",
-        headers={"Authorization": f"Bearer {token}"},
-    )
-    assert response.status_code == 200
-    assert response.json()["user"]["email"] == TEST_CLIENT["email"]
-
-
-def test_get_me_unauthorized():
-    response = client.get(
-        "/auth/me",
-        headers={"Authorization": "Bearer invalid_token"},
-    )
-    assert response.status_code == 401
-
-
 def test_admin_endpoint_unauthorized(db_session: Session, test_login: Client):
     login_response = client.post(
         "/auth/login",

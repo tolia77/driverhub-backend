@@ -66,8 +66,8 @@ def get_delivery(
 
 
 @router.patch("/{delivery_id}",
-            response_model=DeliveryShow,
-            dependencies=[Depends(require_role("dispatcher"))])
+              response_model=DeliveryShow,
+              dependencies=[Depends(require_role("dispatcher"))])
 def update_delivery(
         delivery_id: int,
         delivery_data: DeliveryUpdate,
@@ -79,18 +79,20 @@ def update_delivery(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Delivery not found"
         )
-
-    if delivery_data.driver_id:
-        driver = db.query(Driver).filter(Driver.id == delivery_data.driver_id).first()
-        if not driver:
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail="Driver not found"
-            )
-
+    if 'driver_id' in delivery_data.model_fields_set:
+        if delivery_data.driver_id is not None:
+            driver = db.query(Driver).filter(Driver.id == delivery_data.driver_id).first()
+            if not driver:
+                raise HTTPException(
+                    status_code=status.HTTP_404_NOT_FOUND,
+                    detail="Driver not found"
+                )
+        setattr(delivery, 'driver_id', delivery_data.driver_id)
+    if 'client_id' in delivery_data.model_fields_set:
+        setattr(delivery, 'client_id', delivery_data.client_id)
     for field, value in delivery_data.model_dump(exclude_unset=True).items():
-        setattr(delivery, field, value)
-
+        if field not in ['driver_id', 'client_id']:
+            setattr(delivery, field, value)
     db.commit()
     db.refresh(delivery)
     return delivery

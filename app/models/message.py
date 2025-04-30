@@ -9,7 +9,7 @@ class Message(Base):
     id: Mapped[int] = mapped_column(primary_key=True)
     text: Mapped[str] = mapped_column(Text, nullable=False)
     sender_id: Mapped[int] = mapped_column(ForeignKey('users.id'), nullable=False)
-    receiver_id: Mapped[int] = mapped_column(ForeignKey('users.id'), nullable=False)
+    receiver_id: Mapped[int] = mapped_column(ForeignKey('users.id'), nullable=True)
     created_at: Mapped[datetime.datetime] = mapped_column(
         default=datetime.datetime.now(datetime.UTC),
         nullable=False

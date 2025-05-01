@@ -138,7 +138,7 @@ def test_update_dispatcher_success(db_session: Session, test_dispatcher, admin_a
         "first_name": "Updated",
         "last_name": "Name"
     }
-    response = client.put(
+    response = client.patch(
         f"/dispatchers/{test_dispatcher.id}",
         json=update_data,
         headers=admin_auth_headers
@@ -155,7 +155,7 @@ def test_update_dispatcher_not_found(db_session: Session, admin_auth_headers):
         "first_name": "Updated",
         "last_name": "Name"
     }
-    response = client.put(
+    response = client.patch(
         f"/dispatchers/{non_existent_id}",
         json=update_data,
         headers=admin_auth_headers

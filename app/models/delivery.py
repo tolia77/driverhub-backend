@@ -1,9 +1,10 @@
-from datetime import datetime, UTC
+from datetime import datetime
 from enum import Enum
+
 from sqlalchemy import String, ForeignKey, Text, Enum as SQLEnum
 from sqlalchemy.orm import mapped_column, Mapped, relationship
+
 from app.db import Base
-from app.models import User
 
 
 class DeliveryStatus(str, Enum):
@@ -28,7 +29,7 @@ class Delivery(Base):
         nullable=False
     )
     delivery_notes: Mapped[str | None] = mapped_column(Text, nullable=True)
-    created_at: Mapped[datetime] = mapped_column(default=lambda: datetime.now, nullable=False)
+    created_at: Mapped[datetime] = mapped_column(default=datetime.now, nullable=False)
 
     driver: Mapped["Driver"] = relationship("Driver", back_populates="deliveries")
     client: Mapped["Client"] = relationship("Client", back_populates="deliveries")

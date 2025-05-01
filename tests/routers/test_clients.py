@@ -140,7 +140,7 @@ def test_update_client_by_admin_success(db_session: Session, test_client, admin_
         "phone_number": "+380991111111"
     }
 
-    response = client.put(
+    response = client.patch(
         f"/clients/{test_client.id}",
         json=update_data,
         headers=admin_auth_headers
@@ -158,7 +158,7 @@ def test_update_client_by_admin_success(db_session: Session, test_client, admin_
 def test_update_client_by_dispatcher_forbidden(db_session: Session, test_client, dispatcher_auth_headers):
     update_data = {"first_name": "Should Fail"}
 
-    response = client.put(
+    response = client.patch(
         f"/clients/{test_client.id}",
         json=update_data,
         headers=dispatcher_auth_headers
@@ -171,7 +171,7 @@ def test_update_client_not_found(db_session: Session, admin_auth_headers):
     non_existent_id = 9999
     update_data = {"first_name": "Updated"}
 
-    response = client.put(
+    response = client.patch(
         f"/clients/{non_existent_id}",
         json=update_data,
         headers=admin_auth_headers
@@ -196,7 +196,7 @@ def test_update_client_email_conflict(db_session: Session, test_client, admin_au
     # Try to update test_client's email to another_client's email
     update_data = {"email": another_client.email}
 
-    response = client.put(
+    response = client.patch(
         f"/clients/{test_client.id}",
         json=update_data,
         headers=admin_auth_headers

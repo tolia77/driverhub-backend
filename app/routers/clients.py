@@ -29,7 +29,7 @@ def get_client(client_id: int, db: Session = Depends(get_db)):
     return client
 
 
-@router.put("/{client_id}", response_model=ClientOut, dependencies=[Depends(require_role("admin"))])
+@router.patch("/{client_id}", response_model=ClientOut, dependencies=[Depends(require_role("admin"))])
 def update_client(
         client_id: int,
         client_update: ClientUpdate,

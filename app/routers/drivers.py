@@ -62,7 +62,7 @@ def get_driver(driver_id: int, db: Session = Depends(get_db)):
     return driver
 
 
-@router.put("/{driver_id}", response_model=DriverRead,
+@router.patch("/{driver_id}", response_model=DriverRead,
             dependencies=[Depends(require_role("dispatcher"))])
 def update_driver(driver_id: int, driver_update: DriverUpdate, db: Session = Depends(get_db)):
     driver = db.query(Driver).filter(Driver.id == driver_id).first()

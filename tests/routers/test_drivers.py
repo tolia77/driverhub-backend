@@ -156,7 +156,7 @@ def test_update_driver_vehicle(db_session: Session, test_driver, test_vehicle, d
 
     update_data = {"vehicle_id": new_vehicle.id}
 
-    response = client.put(
+    response = client.patch(
         f"/drivers/{test_driver.id}",
         json=update_data,
         headers=dispatcher_auth_headers
@@ -170,7 +170,7 @@ def test_update_driver_vehicle(db_session: Session, test_driver, test_vehicle, d
 def test_update_driver_with_invalid_vehicle(db_session: Session, test_driver, dispatcher_auth_headers):
     update_data = {"vehicle_id": 9999}  # Неіснуючий vehicle_id
 
-    response = client.put(
+    response = client.patch(
         f"/drivers/{test_driver.id}",
         json=update_data,
         headers=dispatcher_auth_headers
@@ -218,7 +218,7 @@ def test_update_driver_success(db_session: Session, test_driver, dispatcher_auth
         "license_number": "DL99999999"
     }
 
-    response = client.put(
+    response = client.patch(
         f"/drivers/{test_driver.id}",
         json=update_data,
         headers=dispatcher_auth_headers
@@ -240,7 +240,7 @@ def test_update_driver_not_found(db_session: Session, dispatcher_auth_headers):
         "license_number": "DL99999999"
     }
 
-    response = client.put(
+    response = client.patch(
         f"/drivers/{non_existent_id}",
         json=update_data,
         headers=dispatcher_auth_headers

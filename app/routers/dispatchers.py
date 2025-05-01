@@ -51,7 +51,7 @@ def get_dispatcher(dispatcher_id: int, db: Session = Depends(get_db)):
     return dispatcher
 
 
-@router.put("/{dispatcher_id}", response_model=DispatcherRead,
+@router.patch("/{dispatcher_id}", response_model=DispatcherRead,
             dependencies=[Depends(require_role("admin"))])
 def update_dispatcher(dispatcher_id: int, dispatcher_update: DispatcherUpdate, db: Session = Depends(get_db)):
     dispatcher = db.query(Dispatcher).filter(Dispatcher.id == dispatcher_id).first()

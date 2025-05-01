@@ -154,7 +154,7 @@ def test_update_vehicle_success(db_session: Session, test_vehicle, dispatcher_au
         "mileage": 20000
     }
 
-    response = client.put(
+    response = client.patch(
         f"/vehicles/{test_vehicle.id}",
         json=update_data,
         headers=dispatcher_auth_headers
@@ -184,7 +184,7 @@ def test_update_vehicle_duplicate_license_plate(db_session: Session, test_vehicl
         "license_plate": other_vehicle.license_plate
     }
 
-    response = client.put(
+    response = client.patch(
         f"/vehicles/{test_vehicle.id}",
         json=update_data,
         headers=dispatcher_auth_headers

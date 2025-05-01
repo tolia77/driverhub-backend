@@ -51,7 +51,7 @@ def get_vehicle(vehicle_id: int, db: Session = Depends(get_db)):
     return vehicle
 
 
-@router.put("/{vehicle_id}", response_model=VehicleRead,
+@router.patch("/{vehicle_id}", response_model=VehicleRead,
             dependencies=[Depends(require_role("dispatcher"))])
 def update_vehicle(vehicle_id: int, vehicle_update: VehicleUpdate, db: Session = Depends(get_db)):
     vehicle = db.query(Vehicle).filter(Vehicle.id == vehicle_id).first()

@@ -176,7 +176,7 @@ def test_create_review_duplicate(db_session: Session, client_auth_headers, test_
     assert response.status_code == 400
     assert "already exists" in response.json()["detail"]
 
-def test_create_review_wrong_client(db_session: Session, client_auth_headers):
+def test_create_review_wrong_client(db_session: Session, client_auth_headers, test_driver):
     other_client = Client(
         email="other@example.com",
         password_hash=hash_password("otherpass123"),
@@ -189,7 +189,7 @@ def test_create_review_wrong_client(db_session: Session, client_auth_headers):
 
     delivery = Delivery(
         **TEST_DELIVERY,
-        driver_id=1,
+        driver_id=test_driver.id,
         client_id=other_client.id
     )
     db_session.add(delivery)
@@ -218,11 +218,11 @@ def test_list_reviews(db_session: Session, test_review, dispatcher_auth_headers)
     assert len(reviews) == 1
     assert reviews[0]["id"] == test_review.id
 
-def test_list_reviews_filter_by_delivery(db_session: Session, test_review, dispatcher_auth_headers):
+def test_list_reviews_filter_by_delivery(db_session: Session, test_review, dispatcher_auth_headers, test_driver, test_client):
     delivery2 = Delivery(
         **TEST_DELIVERY,
-        driver_id=1,
-        client_id=1
+        driver_id=test_driver.id,
+        client_id=test_client.id
     )
     db_session.add(delivery2)
     db_session.commit()
@@ -315,7 +315,7 @@ def test_delete_review_unauthorized(db_session: Session, dispatcher_auth_headers
     assert response.status_code == 403
     assert db_session.query(Review).filter_by(id=test_review.id).first() is not None
 
-def test_get_my_reviews(db_session: Session, client_auth_headers, test_review):
+def test_get_my_reviews(db_session: Session, client_auth_headers, test_review, test_driver):
     other_client = Client(
         email="other@example.com",
         password_hash=hash_password("otherpass123"),
@@ -328,7 +328,7 @@ def test_get_my_reviews(db_session: Session, client_auth_headers, test_review):
 
     delivery = Delivery(
         **TEST_DELIVERY,
-        driver_id=1,
+        driver_id=test_driver.id,
         client_id=other_client.id
     )
     db_session.add(delivery)

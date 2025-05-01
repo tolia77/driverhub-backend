@@ -1,11 +1,12 @@
+from typing import List, Optional
+
 from fastapi import APIRouter, status, Depends, HTTPException
 from sqlalchemy.orm import Session
-from typing import List, Optional
 
 from app.db import get_db
 from app.dependencies import require_role, get_current_user
-from app.models import Review, Delivery, User
-from app.schemas.review import ReviewBase, ReviewCreate, ReviewUpdate, ReviewRead
+from app.models import Review, Delivery
+from app.schemas.review import ReviewCreate, ReviewUpdate, ReviewRead
 
 router = APIRouter(prefix="/reviews", tags=["reviews"])
 
@@ -19,7 +20,6 @@ def create_review(
         db: Session = Depends(get_db),
         current_user: dict = Depends(get_current_user)
 ):
-    # Check if the delivery exists and belongs to the current client
     delivery = db.query(Delivery).filter(
         Delivery.id == review.delivery_id,
         Delivery.client_id == current_user["id"]
@@ -105,7 +105,6 @@ def update_review(
             detail="Review not found"
         )
 
-    # Verify the review belongs to the current client through delivery
     delivery = db.query(Delivery).filter(
         Delivery.id == review.delivery_id,
         Delivery.client_id == current_user["id"]
@@ -144,7 +143,6 @@ def delete_review(
             detail="Review not found"
         )
 
-    # Verify the review belongs to the current client through delivery
     delivery = db.query(Delivery).filter(
         Delivery.id == review.delivery_id,
         Delivery.client_id == current_user["id"]

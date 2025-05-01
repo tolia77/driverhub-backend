@@ -1,6 +1,6 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from app.routers import auth, dispatchers, drivers, vehicles, clients, deliveries, log_breaks, websocket
+from app.routers import auth, dispatchers, drivers, vehicles, clients, deliveries, log_breaks, websocket, messages
 
 app = FastAPI()
 app.add_middleware(
@@ -18,3 +18,4 @@ app.include_router(clients.router)
 app.include_router(deliveries.router)
 app.include_router(log_breaks.router)
 app.include_router(websocket.router)
+app.include_router(messages.router)

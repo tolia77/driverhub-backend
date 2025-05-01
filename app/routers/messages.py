@@ -11,7 +11,7 @@ from app.schemas.message import MessageShow, MessageCreate
 router = APIRouter(prefix="/messages", tags=["messages"])
 
 
-@router.get("/conversation", response_model=List[MessageShow], dependencies=[Depends(require_role("dispatcher"))])
+@router.get("/conversation", response_model=List[MessageShow])
 def get_conversation(
         sender_id: Optional[int] = Query(None),
         receiver_id: Optional[int] = Query(None),

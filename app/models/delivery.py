@@ -28,7 +28,7 @@ class Delivery(Base):
         nullable=False
     )
     delivery_notes: Mapped[str | None] = mapped_column(Text, nullable=True)
-    created_at: Mapped[datetime] = mapped_column(default=lambda: datetime.now(UTC), nullable=False)
+    created_at: Mapped[datetime] = mapped_column(default=lambda: datetime.now, nullable=False)
 
     driver: Mapped["Driver"] = relationship("Driver", back_populates="deliveries")
     client: Mapped["Client"] = relationship("Client", back_populates="deliveries")

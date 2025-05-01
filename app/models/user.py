@@ -12,7 +12,7 @@ class User(Base):
     id: Mapped[int] = mapped_column(primary_key=True)
     first_name: Mapped[str] = mapped_column(nullable=False)
     last_name: Mapped[str] = mapped_column(nullable=False)
-    created_at: Mapped[datetime.datetime] = mapped_column(default=datetime.datetime.now(datetime.UTC), nullable=False)
+    created_at: Mapped[datetime.datetime] = mapped_column(default=datetime.datetime.now, nullable=False)
     type: Mapped[str] = mapped_column(nullable=False)
     sent_messages: Mapped[list["Message"]] = relationship(
         "Message",

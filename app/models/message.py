@@ -11,7 +11,7 @@ class Message(Base):
     sender_id: Mapped[int] = mapped_column(ForeignKey('users.id'), nullable=False)
     receiver_id: Mapped[int] = mapped_column(ForeignKey('users.id'), nullable=True)
     created_at: Mapped[datetime.datetime] = mapped_column(
-        default=datetime.datetime.now(datetime.UTC),
+        default=datetime.datetime.now,
         nullable=False
     )
     sender: Mapped["User"] = relationship(foreign_keys=[sender_id])

@@ -68,18 +68,17 @@ async def websocket_chat(
                 db.commit()
                 db.refresh(message)
 
-                # Send to target driver
-                await manager.send_to_driver(
-                    target_driver_id,
-                    {
-                        "id": message.id,
-                        "text": message.text,
-                        "sender_id": message.sender_id,
-                        "receiver_id": message.receiver_id,
-                        "created_at": message.created_at.isoformat(),
-                        "type": "message"
-                    }
-                )
+                payload = {
+                    "id": message.id,
+                    "text": message.text,
+                    "sender_id": message.sender_id,
+                    "receiver_id": message.receiver_id,
+                    "created_at": message.created_at.isoformat(),
+                    "type": "message"
+                }
+
+                await manager.send_to_driver(target_driver_id, payload)
+                await websocket.send_json(payload)
 
             elif user["type"] == "driver":
                 message = Message(
@@ -91,16 +90,18 @@ async def websocket_chat(
                 db.commit()
                 db.refresh(message)
 
-                await manager.send_to_all_dispatchers(
-                    {
-                        "id": message.id,
-                        "text": message.text,
-                        "sender_id": message.sender_id,
-                        "receiver_id": message.receiver_id,
-                        "created_at": message.created_at.isoformat(),
-                        "type": "message"
-                    }
-                )
+                payload = {
+                    "id": message.id,
+                    "text": message.text,
+                    "sender_id": message.sender_id,
+                    "receiver_id": message.receiver_id,
+                    "created_at": message.created_at.isoformat(),
+                    "type": "message"
+                }
+
+                await manager.send_to_all_dispatchers(payload)
+                await websocket.send_json(payload)  # 👈 водію назад
+
 
     except WebSocketDisconnect:
         manager.disconnect(user)

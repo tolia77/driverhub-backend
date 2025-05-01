@@ -11,6 +11,10 @@ class Review(Base):
     delivery_id: Mapped[int] = mapped_column(ForeignKey('deliveries.id'), nullable=False)
     text: Mapped[str | None] = mapped_column(Text, nullable=True)
     rating: Mapped[int] = mapped_column(Integer, nullable=False)
-    created_at: Mapped[datetime] = mapped_column(default=lambda: datetime.now, nullable=False)
+    created_at: Mapped[datetime] = mapped_column(default=datetime.now, nullable=False)
 
     delivery: Mapped["Delivery"] = relationship("Delivery", back_populates="reviews")
+
+    @property
+    def client_id(self):
+        return self.delivery.client_id

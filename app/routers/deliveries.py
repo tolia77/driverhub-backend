@@ -46,7 +46,7 @@ def list_deliveries(
         limit: int = 100,
         db: Session = Depends(get_db)
 ):
-    return db.query(Delivery).offset(skip).limit(limit).all()
+    return db.query(Delivery).options(joinedload(Delivery.review)).offset(skip).limit(limit).all()
 
 
 @router.get("/{delivery_id}",

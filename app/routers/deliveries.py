@@ -1,5 +1,5 @@
 from fastapi import APIRouter, Depends, HTTPException, status, Body
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, joinedload
 from typing import List
 
 from app.db import get_db
@@ -170,6 +170,7 @@ def get_my_deliveries(
         current_user: dict = Depends(get_current_user)
 ):
     return db.query(Delivery) \
+        .options(joinedload(Delivery.review)) \
         .filter(Delivery.client_id == current_user["id"]) \
         .offset(skip) \
         .limit(limit) \

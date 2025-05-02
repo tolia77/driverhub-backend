@@ -35,4 +35,4 @@ class Delivery(Base):
     client: Mapped["Client"] = relationship("Client", back_populates="deliveries")
 
     breaks: Mapped[list["LogBreak"]] = relationship("LogBreak", back_populates="delivery")
-    reviews: Mapped[list["Review"]] = relationship("Review", back_populates="delivery")
+    review: Mapped["Review"] = relationship("Review", back_populates="delivery", uselist=False)

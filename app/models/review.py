@@ -1,6 +1,8 @@
-from datetime import datetime, UTC
+from datetime import datetime
+
 from sqlalchemy import ForeignKey, Text, Integer
 from sqlalchemy.orm import mapped_column, Mapped, relationship
+
 from app.db import Base
 
 
@@ -13,7 +15,7 @@ class Review(Base):
     rating: Mapped[int] = mapped_column(Integer, nullable=False)
     created_at: Mapped[datetime] = mapped_column(default=datetime.now, nullable=False)
 
-    delivery: Mapped["Delivery"] = relationship("Delivery", back_populates="reviews")
+    delivery: Mapped["Delivery"] = relationship("Delivery", back_populates="review")
 
     @property
     def client_id(self):

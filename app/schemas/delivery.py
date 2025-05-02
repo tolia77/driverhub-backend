@@ -3,6 +3,8 @@ from enum import Enum
 from typing import Optional
 from pydantic import BaseModel, ConfigDict
 
+from app.schemas.review import ReviewRead
+
 
 class DeliveryStatus(str, Enum):
     PENDING = "Pending"
@@ -37,6 +39,7 @@ class DeliveryUpdate(BaseModel):
 
 class DeliveryShow(DeliveryBase):
     id: int
+    review: Optional[ReviewRead] = None
     created_at: datetime
     model_config = ConfigDict(from_attributes=True)
 

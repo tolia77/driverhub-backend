@@ -1,10 +1,8 @@
-alembic==1.15.2
-bcrypt==4.3.0
-fastapi==0.115.12
-pydantic==2.11.3
-pydantic-settings==2.9.1
-python-jose==3.4.0
-SQLAlchemy==2.0.40
-
-app~=0.1
+SQLAlchemy~=2.0.40
+python-jose~=3.4.0
+bcrypt~=4.3.0
+fastapi~=0.115.12
+pydantic~=2.11.3
+pydantic-settings~=2.9.1
 pytest~=8.3.5
+alembic~=1.15.2

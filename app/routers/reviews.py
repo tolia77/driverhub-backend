@@ -21,17 +21,15 @@ def create_review(
         current_user: dict = Depends(get_current_user)
 ):
     delivery = db.query(Delivery).filter(
-        Delivery.id == review.delivery_id,
-        Delivery.client_id == current_user["id"]
+        Delivery.id == review.delivery_id
     ).first()
 
-    if not delivery:
+    if not delivery or not (delivery.client_id == current_user["id"] or current_user["type"] == "admin"):
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Delivery not found or not assigned to you"
         )
 
-    # Check if review already exists for this delivery
     existing_review = db.query(Review).filter(
         Review.delivery_id == review.delivery_id
     ).first()
@@ -106,11 +104,10 @@ def update_review(
         )
 
     delivery = db.query(Delivery).filter(
-        Delivery.id == review.delivery_id,
-        Delivery.client_id == current_user["id"]
+        Delivery.id == review.delivery_id
     ).first()
 
-    if not delivery:
+    if not delivery or not (delivery.client_id == current_user["id"] or current_user["type"] == "admin"):
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="You can only update your own reviews"
@@ -144,11 +141,10 @@ def delete_review(
         )
 
     delivery = db.query(Delivery).filter(
-        Delivery.id == review.delivery_id,
-        Delivery.client_id == current_user["id"]
+        Delivery.id == review.delivery_id
     ).first()
 
-    if not delivery:
+    if not delivery or not (delivery.client_id == current_user["id"] or current_user["type"] == "admin"):
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="You can only delete your own reviews"

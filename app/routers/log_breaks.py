@@ -25,10 +25,9 @@ def create_log_break(
 ):
     delivery = db.query(Delivery).filter(
         Delivery.id == log_break_data.delivery_id,
-        Delivery.driver_id == current_user["id"]
     ).first()
 
-    if not delivery:
+    if not delivery or not (delivery.driver_id == current_user["id"] or current_user["type"] == "admin"):
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Delivery not found or not assigned to you"
@@ -93,10 +92,9 @@ def update_log_break(
         )
     delivery = db.query(Delivery).filter(
         Delivery.id == log_break.delivery_id,
-        Delivery.driver_id == current_user["id"]
     ).first()
 
-    if not delivery:
+    if not delivery or not (delivery.driver_id == current_user["id"] or current_user["type"] == "admin"):
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="You can only update your own log breaks"
@@ -133,11 +131,10 @@ def delete_log_break(
         )
 
     delivery = db.query(Delivery).filter(
-        Delivery.id == log_break.delivery_id,
-        Delivery.driver_id == current_user["id"]
+        Delivery.id == log_break.delivery_id
     ).first()
 
-    if not delivery:
+    if not delivery or not (delivery.driver_id == current_user["id"] or current_user["type"] == "admin"):
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="You can only delete your own log breaks"

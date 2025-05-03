@@ -17,13 +17,15 @@ class User(Base):
     sent_messages: Mapped[list["Message"]] = relationship(
         "Message",
         foreign_keys="Message.sender_id",
-        back_populates="sender"
+        back_populates="sender",
+        cascade="all, delete-orphan"
     )
 
     received_messages: Mapped[list["Message"]] = relationship(
         "Message",
         foreign_keys="Message.receiver_id",
-        back_populates="receiver"
+        back_populates="receiver",
+        cascade="all, delete-orphan"
     )
     __mapper_args__ = {
         'polymorphic_identity': 'user',

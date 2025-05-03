@@ -36,6 +36,12 @@ def create_vehicle(vehicle: VehicleCreate, db: Session = Depends(get_db)):
     return new_vehicle
 
 
+@router.get("/unassigned", response_model=List[VehicleRead],
+            dependencies=[Depends(require_role("dispatcher"))])
+def get_unassigned_vehicles(db: Session = Depends(get_db)):
+    return db.query(Vehicle).filter(Vehicle.driver == None).all()
+
+
 @router.get("/", response_model=List[VehicleRead],
             dependencies=[Depends(require_role("dispatcher"))])
 def list_vehicles(db: Session = Depends(get_db)):
@@ -52,7 +58,7 @@ def get_vehicle(vehicle_id: int, db: Session = Depends(get_db)):
 
 
 @router.patch("/{vehicle_id}", response_model=VehicleRead,
-            dependencies=[Depends(require_role("dispatcher"))])
+              dependencies=[Depends(require_role("dispatcher"))])
 def update_vehicle(vehicle_id: int, vehicle_update: VehicleUpdate, db: Session = Depends(get_db)):
     vehicle = db.query(Vehicle).filter(Vehicle.id == vehicle_id).first()
     if not vehicle:
@@ -88,8 +94,6 @@ def delete_vehicle(vehicle_id: int, db: Session = Depends(get_db)):
     vehicle = db.query(Vehicle).filter(Vehicle.id == vehicle_id).first()
     if not vehicle:
         raise HTTPException(status_code=404, detail="Vehicle not found")
-
-    # Перевірка чи транспортний засіб прив'язаний до водія
     if vehicle.driver:
         raise HTTPException(
             status_code=400,
@@ -98,9 +102,3 @@ def delete_vehicle(vehicle_id: int, db: Session = Depends(get_db)):
 
     db.delete(vehicle)
     db.commit()
-
-
-@router.get("/unassigned/", response_model=List[VehicleRead],
-            dependencies=[Depends(require_role("dispatcher"))])
-def get_unassigned_vehicles(db: Session = Depends(get_db)):
-    return db.query(Vehicle).filter(Vehicle.driver == None).all()

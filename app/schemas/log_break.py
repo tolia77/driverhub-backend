@@ -2,10 +2,10 @@ from datetime import datetime
 from typing import Optional
 
 from pydantic import BaseModel, ConfigDict
+from app.schemas.location import LocationCreate, LocationOut
 
 
 class LogBreakBase(BaseModel):
-    location: str
     start_time: datetime
     end_time: datetime
     cost: float
@@ -13,11 +13,11 @@ class LogBreakBase(BaseModel):
 
 
 class LogBreakCreate(LogBreakBase):
-    pass
+    location: LocationCreate
 
 
 class LogBreakUpdate(BaseModel):
-    location: Optional[str] = None
+    location: Optional[LocationCreate] = None
     start_time: Optional[datetime] = None
     end_time: Optional[datetime] = None
     cost: Optional[float] = None
@@ -26,4 +26,5 @@ class LogBreakUpdate(BaseModel):
 
 class LogBreakOut(LogBreakBase):
     id: int
+    location: LocationOut
     model_config = ConfigDict(from_attributes=True)

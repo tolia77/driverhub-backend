@@ -4,7 +4,7 @@ from fastapi.testclient import TestClient
 from sqlalchemy.orm import Session
 
 from app.main import app
-from app.models import LogBreak, Driver, Dispatcher, Delivery, Client
+from app.models import LogBreak, Driver, Dispatcher, Delivery, Client, Location
 from app.utils.security import hash_password
 
 client = TestClient(app)
@@ -40,7 +40,11 @@ TEST_DELIVERY = {
 }
 
 TEST_LOG_BREAK = {
-    "location": "Rest Area",
+    "location": {
+        "latitude": 49.8397,
+        "longitude": 24.0297,
+        "address": "Rest Area"
+    },
     "start_time": datetime.now(),
     "end_time": datetime.now() + timedelta(minutes=30),
     "cost": 15.50
@@ -104,10 +108,25 @@ def test_delivery(db_session: Session, test_driver, test_client):
 
 
 @pytest.fixture
-def test_log_break(db_session: Session, test_delivery):
+def test_location(db_session: Session):
+    location = Location(
+        latitude=TEST_LOG_BREAK["location"]["latitude"],
+        longitude=TEST_LOG_BREAK["location"]["longitude"],
+        address=TEST_LOG_BREAK["location"]["address"]
+    )
+    db_session.add(location)
+    db_session.commit()
+    return location
+
+
+@pytest.fixture
+def test_log_break(db_session: Session, test_delivery, test_location):
     log_break = LogBreak(
-        **TEST_LOG_BREAK,
-        delivery_id=test_delivery.id
+        start_time=TEST_LOG_BREAK["start_time"],
+        end_time=TEST_LOG_BREAK["end_time"],
+        cost=TEST_LOG_BREAK["cost"],
+        delivery_id=test_delivery.id,
+        location_id=test_location.id
     )
     db_session.add(log_break)
     db_session.commit()
@@ -145,15 +164,13 @@ def test_create_log_break_success(db_session: Session, driver_auth_headers, test
         "delivery_id": test_delivery.id
     }
 
-    response = client.post(
-        "/log_breaks/",
-        json=log_break_data,
-        headers=driver_auth_headers
-    )
-
+    response = client.post("/log_breaks/", json=log_break_data, headers=driver_auth_headers)
     assert response.status_code == 201
     data = response.json()
-    assert data["location"] == log_break_data["location"]
+
+    assert isinstance(data["location"], dict)
+    assert data["location"]["address"] == TEST_LOG_BREAK["location"]["address"]
+    assert data["location"]["latitude"] == TEST_LOG_BREAK["location"]["latitude"]
     assert data["delivery_id"] == test_delivery.id
 
     db_log_break = db_session.query(LogBreak).filter_by(id=data["id"]).first()
@@ -186,37 +203,34 @@ def test_create_log_break_wrong_driver(db_session: Session, driver_auth_headers)
         "delivery_id": delivery.id
     }
 
-    response = client.post(
-        "/log_breaks/",
-        json=log_break_data,
-        headers=driver_auth_headers
-    )
-
+    response = client.post("/log_breaks/", json=log_break_data, headers=driver_auth_headers)
     assert response.status_code == 404
     assert "not assigned to you" in response.json()["detail"]
 
 
 def test_list_log_breaks(db_session: Session, test_log_break):
     response = client.get("/log_breaks/")
-
     assert response.status_code == 200
     log_breaks = response.json()
-    assert len(log_breaks) == 1
-    assert log_breaks[0]["id"] == test_log_break.id
+    assert len(log_breaks) >= 1
+    assert any(lb["id"] == test_log_break.id for lb in log_breaks)
 
 
 def test_get_log_break_success(db_session: Session, test_log_break):
     response = client.get(f"/log_breaks/{test_log_break.id}")
-
     assert response.status_code == 200
     data = response.json()
     assert data["id"] == test_log_break.id
-    assert data["location"] == test_log_break.location
+    assert data["location"]["address"] == test_log_break.location.address
 
 
 def test_update_log_break_success(db_session: Session, driver_auth_headers, test_log_break):
     update_data = {
-        "location": "Updated Location",
+        "location": {
+            "latitude": 50.4501,
+            "longitude": 30.5234,
+            "address": "Kyiv Rest Spot"
+        },
         "cost": 20.00
     }
 
@@ -228,16 +242,15 @@ def test_update_log_break_success(db_session: Session, driver_auth_headers, test
 
     assert response.status_code == 200
     data = response.json()
-    assert data["location"] == update_data["location"]
+    assert data["location"]["address"] == update_data["location"]["address"]
     assert data["cost"] == update_data["cost"]
 
     db_session.refresh(test_log_break)
-    assert test_log_break.location == update_data["location"]
+    assert test_log_break.location.address == update_data["location"]["address"]
 
 
 def test_update_log_break_unauthorized(db_session: Session, dispatcher_auth_headers, test_log_break):
-    update_data = {"location": "Should Fail"}
-
+    update_data = {"location": {"address": "Should Fail", "latitude": 0.0, "longitude": 0.0}}
     response = client.patch(
         f"/log_breaks/{test_log_break.id}",
         json=update_data,

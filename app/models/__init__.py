@@ -8,3 +8,4 @@ from .delivery import Delivery
 from .log_break import LogBreak
 from .review import Review
 from .message import Message
+from .location import Location

@@ -26,6 +26,7 @@ def create_log_break(
         raise HTTPException(status_code=400, detail="End time must be after start time")
 
     location = Location(**log_break_data.location.model_dump())
+    location.address = location.get_address()
     db.add(location)
     db.flush()
 
@@ -87,6 +88,7 @@ def update_log_break(
 
     if log_break_data.location:
         new_location = Location(**log_break_data.location.model_dump())
+        new_location.address = new_location.get_address()
         db.add(new_location)
         db.flush()
         log_break.location_id = new_location.id

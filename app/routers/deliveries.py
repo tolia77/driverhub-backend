@@ -33,9 +33,11 @@ def create_delivery(
             )
 
     pickup_location = Location(**delivery_data.pickup_location.model_dump())
+    pickup_location.address = pickup_location.get_address()
     db.add(pickup_location)
 
     dropoff_location = Location(**delivery_data.dropoff_location.model_dump())
+    dropoff_location.address = dropoff_location.get_address()
     db.add(dropoff_location)
 
     db.commit()
@@ -121,6 +123,7 @@ def update_delivery(
 
     if delivery_data.pickup_location:
         pickup_location = Location(**delivery_data.pickup_location.model_dump())
+        pickup_location.address = pickup_location.get_address()
         db.add(pickup_location)
         db.commit()
         db.refresh(pickup_location)
@@ -128,6 +131,7 @@ def update_delivery(
 
     if delivery_data.dropoff_location:
         dropoff_location = Location(**delivery_data.dropoff_location.model_dump())
+        dropoff_location.address = dropoff_location.get_address()
         db.add(dropoff_location)
         db.commit()
         db.refresh(dropoff_location)

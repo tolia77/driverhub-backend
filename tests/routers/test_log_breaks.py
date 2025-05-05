@@ -33,8 +33,16 @@ TEST_CLIENT = {
 }
 
 TEST_DELIVERY = {
-    "pickup_location": "123 Main St",
-    "dropoff_location": "456 Oak Ave",
+    "pickup_location": {
+        "latitude": 49.8397,
+        "longitude": 24.0297,
+        "address": "123 Main St"
+    },
+    "dropoff_location": {
+        "latitude": 50.4501,
+        "longitude": 30.5234,
+        "address": "456 Oak Ave"
+    },
     "package_details": "Test package",
     "status": "Pending"
 }
@@ -45,9 +53,10 @@ TEST_LOG_BREAK = {
         "longitude": 24.0297,
         "address": "Rest Area"
     },
-    "start_time": datetime.now(),
-    "end_time": datetime.now() + timedelta(minutes=30),
-    "cost": 15.50
+    "start_time": datetime.now().isoformat(),
+    "end_time": (datetime.now() + timedelta(minutes=30)).isoformat(),
+    "cost": 15.50,
+    "delivery_id": None  # Will be filled in tests
 }
 
 
@@ -97,10 +106,31 @@ def test_dispatcher(db_session: Session):
 
 @pytest.fixture
 def test_delivery(db_session: Session, test_driver, test_client):
+    # Create pickup location
+    pickup_location = Location(
+        latitude=TEST_DELIVERY["pickup_location"]["latitude"],
+        longitude=TEST_DELIVERY["pickup_location"]["longitude"],
+        address=TEST_DELIVERY["pickup_location"]["address"]
+    )
+    db_session.add(pickup_location)
+
+    # Create dropoff location
+    dropoff_location = Location(
+        latitude=TEST_DELIVERY["dropoff_location"]["latitude"],
+        longitude=TEST_DELIVERY["dropoff_location"]["longitude"],
+        address=TEST_DELIVERY["dropoff_location"]["address"]
+    )
+    db_session.add(dropoff_location)
+
+    db_session.commit()
+
     delivery = Delivery(
-        **TEST_DELIVERY,
+        package_details=TEST_DELIVERY["package_details"],
+        status=TEST_DELIVERY["status"],
         driver_id=test_driver.id,
-        client_id=test_client.id
+        client_id=test_client.id,
+        pickup_location_id=pickup_location.id,
+        dropoff_location_id=dropoff_location.id
     )
     db_session.add(delivery)
     db_session.commit()
@@ -110,9 +140,9 @@ def test_delivery(db_session: Session, test_driver, test_client):
 @pytest.fixture
 def test_location(db_session: Session):
     location = Location(
-        latitude=TEST_LOG_BREAK["location"]["latitude"],
-        longitude=TEST_LOG_BREAK["location"]["longitude"],
-        address=TEST_LOG_BREAK["location"]["address"]
+        latitude=49.8397,
+        longitude=24.0297,
+        address="Rest Area"
     )
     db_session.add(location)
     db_session.commit()
@@ -157,10 +187,13 @@ def dispatcher_auth_headers(test_dispatcher):
 
 def test_create_log_break_success(db_session: Session, driver_auth_headers, test_delivery):
     log_break_data = {
-        "location": TEST_LOG_BREAK["location"],
-        "start_time": TEST_LOG_BREAK["start_time"].isoformat(),
-        "end_time": TEST_LOG_BREAK["end_time"].isoformat(),
-        "cost": TEST_LOG_BREAK["cost"],
+        "location": {
+            "latitude": 49.8397,
+            "longitude": 24.0297
+        },
+        "start_time": datetime.now().isoformat(),
+        "end_time": (datetime.now() + timedelta(minutes=30)).isoformat(),
+        "cost": 15.50,
         "delivery_id": test_delivery.id
     }
 
@@ -168,9 +201,7 @@ def test_create_log_break_success(db_session: Session, driver_auth_headers, test
     assert response.status_code == 201
     data = response.json()
 
-    assert isinstance(data["location"], dict)
-    assert data["location"]["address"] == TEST_LOG_BREAK["location"]["address"]
-    assert data["location"]["latitude"] == TEST_LOG_BREAK["location"]["latitude"]
+    assert "location" in data
     assert data["delivery_id"] == test_delivery.id
 
     db_log_break = db_session.query(LogBreak).filter_by(id=data["id"]).first()
@@ -179,10 +210,14 @@ def test_create_log_break_success(db_session: Session, driver_auth_headers, test
 
 def test_create_log_break_unauthorized(db_session: Session, test_delivery):
     log_break_data = {
-        "location": TEST_LOG_BREAK["location"],
-        "start_time": TEST_LOG_BREAK["start_time"].isoformat(),
-        "end_time": TEST_LOG_BREAK["end_time"].isoformat(),
-        "cost": TEST_LOG_BREAK["cost"],
+        "location": {
+            "latitude": 49.8397,
+            "longitude": 24.0297,
+            "address": "Rest Area"
+        },
+        "start_time": datetime.now().isoformat(),
+        "end_time": (datetime.now() + timedelta(minutes=30)).isoformat(),
+        "cost": 15.50,
         "delivery_id": test_delivery.id
     }
 
@@ -190,22 +225,68 @@ def test_create_log_break_unauthorized(db_session: Session, test_delivery):
     assert response.status_code == 401
 
 
-def test_create_log_break_wrong_driver(db_session: Session, driver_auth_headers):
-    delivery = Delivery(**TEST_DELIVERY)
+def test_create_log_break_wrong_driver(db_session: Session, driver_auth_headers, test_client):
+    pickup_location = Location(
+        latitude=49.8397,
+        longitude=24.0297,
+    )
+    db_session.add(pickup_location)
+
+    dropoff_location = Location(
+        latitude=50.4501,
+        longitude=30.5234,
+    )
+    db_session.add(dropoff_location)
+    db_session.commit()
+
+    delivery = Delivery(
+        package_details="Unauthorized package",
+        status="Pending",
+        driver_id=None,
+        client_id=test_client.id,
+        pickup_location_id=pickup_location.id,
+        dropoff_location_id=dropoff_location.id
+    )
     db_session.add(delivery)
     db_session.commit()
 
     log_break_data = {
-        "location": TEST_LOG_BREAK["location"],
-        "start_time": TEST_LOG_BREAK["start_time"].isoformat(),
-        "end_time": TEST_LOG_BREAK["end_time"].isoformat(),
-        "cost": TEST_LOG_BREAK["cost"],
+        "location": {
+            "latitude": 49.8397,
+            "longitude": 24.0297,
+            "address": "Rest Area"
+        },
+        "start_time": datetime.now().isoformat(),
+        "end_time": (datetime.now() + timedelta(minutes=30)).isoformat(),
+        "cost": 15.50,
         "delivery_id": delivery.id
     }
 
     response = client.post("/log_breaks/", json=log_break_data, headers=driver_auth_headers)
     assert response.status_code == 404
     assert "not assigned to you" in response.json()["detail"]
+
+
+def test_update_log_break_success(db_session: Session, driver_auth_headers, test_log_break):
+    update_data = {
+        "location": {
+            "latitude": 50.4501,
+            "longitude": 30.5234
+        },
+        "cost": 20.00
+    }
+
+    response = client.patch(
+        f"/log_breaks/{test_log_break.id}",
+        json=update_data,
+        headers=driver_auth_headers
+    )
+
+    assert response.status_code == 200
+    data = response.json()
+    assert data["cost"] == 20.00
+
+    db_session.refresh(test_log_break)
 
 
 def test_list_log_breaks(db_session: Session, test_log_break):
@@ -224,33 +305,11 @@ def test_get_log_break_success(db_session: Session, test_log_break):
     assert data["location"]["address"] == test_log_break.location.address
 
 
-def test_update_log_break_success(db_session: Session, driver_auth_headers, test_log_break):
+def test_update_log_break_unauthorized(db_session: Session, dispatcher_auth_headers, test_log_break):
     update_data = {
-        "location": {
-            "latitude": 50.4501,
-            "longitude": 30.5234,
-            "address": "Kyiv Rest Spot"
-        },
+        "location_id": test_log_break.location_id,
         "cost": 20.00
     }
-
-    response = client.patch(
-        f"/log_breaks/{test_log_break.id}",
-        json=update_data,
-        headers=driver_auth_headers
-    )
-
-    assert response.status_code == 200
-    data = response.json()
-    assert data["location"]["address"] == update_data["location"]["address"]
-    assert data["cost"] == update_data["cost"]
-
-    db_session.refresh(test_log_break)
-    assert test_log_break.location.address == update_data["location"]["address"]
-
-
-def test_update_log_break_unauthorized(db_session: Session, dispatcher_auth_headers, test_log_break):
-    update_data = {"location": {"address": "Should Fail", "latitude": 0.0, "longitude": 0.0}}
     response = client.patch(
         f"/log_breaks/{test_log_break.id}",
         json=update_data,

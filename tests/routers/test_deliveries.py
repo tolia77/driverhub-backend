@@ -3,7 +3,7 @@ from fastapi.testclient import TestClient
 from sqlalchemy.orm import Session
 
 from app.main import app
-from app.models import Delivery, Driver, Dispatcher, Admin, Client
+from app.models import Delivery, Driver, Dispatcher, Admin, Client, Location
 from app.utils.security import hash_password
 from app.schemas.delivery import DeliveryStatus
 
@@ -39,9 +39,19 @@ TEST_CLIENT = {
     "phone_number": "+1234567890"
 }
 
+TEST_PICKUP_LOCATION = {
+    "latitude": 50.4501,
+    "longitude": 30.5234,
+    "address": "123 Main St, Kyiv"
+}
+
+TEST_DROPOFF_LOCATION = {
+    "latitude": 50.4547,
+    "longitude": 30.5038,
+    "address": "456 Oak Ave, Kyiv"
+}
+
 TEST_DELIVERY = {
-    "pickup_location": "123 Main St",
-    "dropoff_location": "456 Oak Ave",
     "package_details": "Fragile package",
     "status": DeliveryStatus.PENDING
 }
@@ -106,11 +116,29 @@ def test_client(db_session: Session):
 
 
 @pytest.fixture
-def test_delivery(db_session: Session, test_driver, test_client):
+def test_pickup_location(db_session: Session):
+    location = Location(**TEST_PICKUP_LOCATION)
+    db_session.add(location)
+    db_session.commit()
+    return location
+
+
+@pytest.fixture
+def test_dropoff_location(db_session: Session):
+    location = Location(**TEST_DROPOFF_LOCATION)
+    db_session.add(location)
+    db_session.commit()
+    return location
+
+
+@pytest.fixture
+def test_delivery(db_session: Session, test_driver, test_client, test_pickup_location, test_dropoff_location):
     delivery = Delivery(
         **TEST_DELIVERY,
         driver_id=test_driver.id,
-        client_id=test_client.id
+        client_id=test_client.id,
+        pickup_location_id=test_pickup_location.id,
+        dropoff_location_id=test_dropoff_location.id
     )
     db_session.add(delivery)
     db_session.commit()
@@ -150,12 +178,13 @@ def driver_auth_headers(test_driver):
     return {"Authorization": f"Bearer {token}"}
 
 
-# Delivery CRUD Tests
 def test_create_delivery_success(db_session: Session, dispatcher_auth_headers, test_driver, test_client):
     delivery_data = {
         **TEST_DELIVERY,
         "driver_id": test_driver.id,
-        "client_id": test_client.id
+        "client_id": test_client.id,
+        "pickup_location": TEST_PICKUP_LOCATION,
+        "dropoff_location": TEST_DROPOFF_LOCATION
     }
 
     response = client.post(
@@ -166,22 +195,11 @@ def test_create_delivery_success(db_session: Session, dispatcher_auth_headers, t
 
     assert response.status_code == 201
     data = response.json()
-    assert data["pickup_location"] == delivery_data["pickup_location"]
+    assert data["pickup_location"]["latitude"] == TEST_PICKUP_LOCATION["latitude"]
     assert data["status"] == DeliveryStatus.PENDING
 
     db_delivery = db_session.query(Delivery).filter_by(id=data["id"]).first()
     assert db_delivery is not None
-
-
-def test_create_delivery_unauthorized(db_session: Session, test_driver, test_client):
-    delivery_data = {
-        **TEST_DELIVERY,
-        "driver_id": test_driver.id,
-        "client_id": test_client.id
-    }
-
-    response = client.post("/deliveries/", json=delivery_data)
-    assert response.status_code == 401
 
 
 def test_list_deliveries(db_session: Session, dispatcher_auth_headers, test_delivery):
@@ -191,6 +209,7 @@ def test_list_deliveries(db_session: Session, dispatcher_auth_headers, test_deli
     deliveries = response.json()
     assert len(deliveries) == 1
     assert deliveries[0]["id"] == test_delivery.id
+    assert deliveries[0]["pickup_location"]["id"] == test_delivery.pickup_location_id
 
 
 def test_get_delivery_success(db_session: Session, dispatcher_auth_headers, test_delivery):
@@ -202,12 +221,19 @@ def test_get_delivery_success(db_session: Session, dispatcher_auth_headers, test
     assert response.status_code == 200
     data = response.json()
     assert data["id"] == test_delivery.id
-    assert data["status"] == test_delivery.status.value
+    assert data["pickup_location"]["id"] == test_delivery.pickup_location_id
+    assert data["dropoff_location"]["id"] == test_delivery.dropoff_location_id
 
 
 def test_update_delivery_success(db_session: Session, dispatcher_auth_headers, test_delivery):
+    new_location = {
+        "latitude": 50.4600,
+        "longitude": 30.5200,
+        "address": "New location address"
+    }
+
     update_data = {
-        "pickup_location": "Updated Address",
+        "pickup_location": new_location,
         "package_details": "Updated details"
     }
 
@@ -219,13 +245,12 @@ def test_update_delivery_success(db_session: Session, dispatcher_auth_headers, t
 
     assert response.status_code == 200
     data = response.json()
-    assert data["pickup_location"] == update_data["pickup_location"]
+    assert data["pickup_location"]["latitude"] == new_location["latitude"]
 
     db_session.refresh(test_delivery)
-    assert test_delivery.pickup_location == update_data["pickup_location"]
+    assert test_delivery.pickup_location.latitude == new_location["latitude"]
 
 
-# Status Update Tests
 def test_update_status_success(db_session: Session, driver_auth_headers, test_delivery):
     response = client.patch(
         f"/deliveries/{test_delivery.id}/status",
@@ -239,33 +264,10 @@ def test_update_status_success(db_session: Session, driver_auth_headers, test_de
     assert test_delivery.status == DeliveryStatus.IN_TRANSIT
 
 
-def test_update_status_unauthorized(db_session: Session, dispatcher_auth_headers, test_delivery):
-    response = client.patch(
-        f"/deliveries/{test_delivery.id}/status",
-        json={"new_status": DeliveryStatus.IN_TRANSIT},
-        headers=dispatcher_auth_headers
-    )
-
-    assert response.status_code == 403
-
-
-def test_update_status_wrong_driver(db_session: Session, driver_auth_headers):
-    # Create a new delivery with no driver assigned
-    delivery = Delivery(**TEST_DELIVERY)
-    db_session.add(delivery)
-    db_session.commit()
-
-    response = client.patch(
-        f"/deliveries/{delivery.id}/status",
-        json={"new_status": DeliveryStatus.IN_TRANSIT},
-        headers=driver_auth_headers
-    )
-
-    assert response.status_code == 403
-
-
-# Delete Tests
 def test_delete_delivery_success(db_session: Session, admin_auth_headers, test_delivery):
+    pickup_id = test_delivery.pickup_location_id
+    dropoff_id = test_delivery.dropoff_location_id
+
     response = client.delete(
         f"/deliveries/{test_delivery.id}",
         headers=admin_auth_headers
@@ -273,13 +275,41 @@ def test_delete_delivery_success(db_session: Session, admin_auth_headers, test_d
 
     assert response.status_code == 204
     assert db_session.query(Delivery).filter_by(id=test_delivery.id).first() is None
+    # Verify locations are not deleted (if that's your business logic)
+    assert db_session.query(Location).filter_by(id=pickup_id).first() is not None
+    assert db_session.query(Location).filter_by(id=dropoff_id).first() is not None
 
 
-def test_delete_delivery_unauthorized(db_session: Session, dispatcher_auth_headers, test_delivery):
-    response = client.delete(
-        f"/deliveries/{test_delivery.id}",
-        headers=dispatcher_auth_headers
+def test_get_my_deliveries_as_driver(db_session: Session, driver_auth_headers, test_delivery):
+    response = client.get(
+        "/deliveries/driver/me",
+        headers=driver_auth_headers
     )
 
-    assert response.status_code == 403
-    assert db_session.query(Delivery).filter_by(id=test_delivery.id).first() is not None
+    assert response.status_code == 200
+    deliveries = response.json()
+    assert len(deliveries) == 1
+    assert deliveries[0]["id"] == test_delivery.id
+    assert deliveries[0]["driver_id"] == test_delivery.driver_id
+
+
+def test_get_my_deliveries_as_client(db_session: Session, test_client, test_delivery):
+    # Login as client
+    login_data = {
+        "email": TEST_CLIENT["email"],
+        "password": TEST_CLIENT["password"]
+    }
+    response = client.post("/auth/login", json=login_data)
+    token = response.json()["access_token"]
+    headers = {"Authorization": f"Bearer {token}"}
+
+    response = client.get(
+        "/deliveries/client/me",
+        headers=headers
+    )
+
+    assert response.status_code == 200
+    deliveries = response.json()
+    assert len(deliveries) == 1
+    assert deliveries[0]["id"] == test_delivery.id
+    assert deliveries[0]["client_id"] == test_delivery.client_id

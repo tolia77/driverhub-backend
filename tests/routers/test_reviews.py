@@ -4,7 +4,7 @@ from sqlalchemy.orm import Session
 from datetime import datetime, UTC
 
 from app.main import app
-from app.models import Review, Delivery, Client, Driver, Dispatcher
+from app.models import Review, Delivery, Client, Driver, Dispatcher, Location
 from app.utils.security import hash_password
 
 client = TestClient(app)
@@ -38,11 +38,10 @@ TEST_DRIVER = {
 }
 
 TEST_DELIVERY = {
-    "pickup_location": "123 Main St",
-    "dropoff_location": "456 Oak Ave",
     "package_details": "Test package",
     "status": "Pending"
 }
+
 
 @pytest.fixture
 def test_client(db_session: Session):
@@ -58,6 +57,7 @@ def test_client(db_session: Session):
     db_session.commit()
     return client
 
+
 @pytest.fixture
 def test_driver(db_session: Session):
     hashed_password = hash_password(TEST_DRIVER["password"])
@@ -72,6 +72,7 @@ def test_driver(db_session: Session):
     db_session.commit()
     return driver
 
+
 @pytest.fixture
 def test_dispatcher(db_session: Session):
     hashed_password = hash_password(TEST_DISPATCHER["password"])
@@ -85,17 +86,34 @@ def test_dispatcher(db_session: Session):
     db_session.commit()
     return dispatcher
 
+
 @pytest.fixture
 def test_delivery(db_session: Session, test_driver, test_client):
+    pickup_location = Location(
+        latitude=50.4501,
+        longitude=30.5234,
+        address="123 Main St, Kyiv"
+    )
+    dropoff_location = Location(
+        latitude=50.4547,
+        longitude=30.5038,
+        address="456 Oak Ave, Kyiv"
+    )
+    db_session.add_all([pickup_location, dropoff_location])
+    db_session.commit()
+
     delivery = Delivery(
         **TEST_DELIVERY,
         driver_id=test_driver.id,
         client_id=test_client.id,
+        pickup_location_id=pickup_location.id,
+        dropoff_location_id=dropoff_location.id,
         created_at=datetime.now(UTC)
     )
     db_session.add(delivery)
     db_session.commit()
     return delivery
+
 
 @pytest.fixture
 def test_review(db_session: Session, test_delivery):
@@ -108,6 +126,7 @@ def test_review(db_session: Session, test_delivery):
     db_session.commit()
     return review
 
+
 @pytest.fixture
 def client_auth_headers(test_client):
     login_data = {
@@ -118,6 +137,7 @@ def client_auth_headers(test_client):
     token = response.json()["access_token"]
     return {"Authorization": f"Bearer {token}"}
 
+
 @pytest.fixture
 def dispatcher_auth_headers(test_dispatcher):
     login_data = {
@@ -127,6 +147,7 @@ def dispatcher_auth_headers(test_dispatcher):
     response = client.post("/auth/login", json=login_data)
     token = response.json()["access_token"]
     return {"Authorization": f"Bearer {token}"}
+
 
 def test_create_review_success(db_session: Session, client_auth_headers, test_delivery):
     review_data = {
@@ -150,6 +171,7 @@ def test_create_review_success(db_session: Session, client_auth_headers, test_de
     db_review = db_session.query(Review).filter_by(id=data["id"]).first()
     assert db_review is not None
 
+
 def test_create_review_unauthorized(db_session: Session, test_delivery):
     review_data = {
         "delivery_id": test_delivery.id,
@@ -159,6 +181,7 @@ def test_create_review_unauthorized(db_session: Session, test_delivery):
 
     response = client.post("/reviews/", json=review_data)
     assert response.status_code == 401
+
 
 def test_create_review_duplicate(db_session: Session, client_auth_headers, test_review):
     review_data = {
@@ -176,6 +199,7 @@ def test_create_review_duplicate(db_session: Session, client_auth_headers, test_
     assert response.status_code == 400
     assert "already exists" in response.json()["detail"]
 
+
 def test_create_review_wrong_client(db_session: Session, client_auth_headers, test_driver):
     other_client = Client(
         email="other@example.com",
@@ -187,10 +211,26 @@ def test_create_review_wrong_client(db_session: Session, client_auth_headers, te
     db_session.add(other_client)
     db_session.commit()
 
+    pickup_location = Location(
+        latitude=50.4600,
+        longitude=30.5200,
+        address="789 New St, Kyiv"
+    )
+    dropoff_location = Location(
+        latitude=50.4700,
+        longitude=30.5300,
+        address="101 New Ave, Kyiv"
+    )
+    db_session.add_all([pickup_location, dropoff_location])
+    db_session.commit()
+
     delivery = Delivery(
-        **TEST_DELIVERY,
+        package_details="Other package",
+        status="Pending",
         driver_id=test_driver.id,
-        client_id=other_client.id
+        client_id=other_client.id,
+        pickup_location_id=pickup_location.id,
+        dropoff_location_id=dropoff_location.id
     )
     db_session.add(delivery)
     db_session.commit()
@@ -210,6 +250,7 @@ def test_create_review_wrong_client(db_session: Session, client_auth_headers, te
     assert response.status_code == 404
     assert "not assigned to you" in response.json()["detail"]
 
+
 def test_list_reviews(db_session: Session, test_review, dispatcher_auth_headers):
     response = client.get("/reviews/", headers=dispatcher_auth_headers)
 
@@ -218,11 +259,28 @@ def test_list_reviews(db_session: Session, test_review, dispatcher_auth_headers)
     assert len(reviews) == 1
     assert reviews[0]["id"] == test_review.id
 
-def test_list_reviews_filter_by_delivery(db_session: Session, test_review, dispatcher_auth_headers, test_driver, test_client):
+
+def test_list_reviews_filter_by_delivery(db_session: Session, test_review, dispatcher_auth_headers, test_driver,
+                                         test_client):
+    pickup_location = Location(
+        latitude=50.4600,
+        longitude=30.5200,
+        address="789 New St, Kyiv"
+    )
+    dropoff_location = Location(
+        latitude=50.4700,
+        longitude=30.5300,
+        address="101 New Ave, Kyiv"
+    )
+    db_session.add_all([pickup_location, dropoff_location])
+    db_session.commit()
+
     delivery2 = Delivery(
-        **TEST_DELIVERY,
+        package_details="Other package",
+        status="Pending",
         driver_id=test_driver.id,
-        client_id=test_client.id
+        pickup_location_id=pickup_location.id,
+        dropoff_location_id=dropoff_location.id
     )
     db_session.add(delivery2)
     db_session.commit()
@@ -245,6 +303,7 @@ def test_list_reviews_filter_by_delivery(db_session: Session, test_review, dispa
     assert len(reviews) == 1
     assert reviews[0]["id"] == test_review.id
 
+
 def test_get_review_success(db_session: Session, test_review, dispatcher_auth_headers):
     response = client.get(
         f"/reviews/{test_review.id}",
@@ -256,6 +315,7 @@ def test_get_review_success(db_session: Session, test_review, dispatcher_auth_he
     assert data["id"] == test_review.id
     assert data["text"] == test_review.text
 
+
 def test_get_review_not_found(db_session: Session, dispatcher_auth_headers):
     non_existent_id = 9999
     response = client.get(
@@ -265,6 +325,7 @@ def test_get_review_not_found(db_session: Session, dispatcher_auth_headers):
 
     assert response.status_code == 404
     assert "not found" in response.json()["detail"]
+
 
 def test_update_review_success(db_session: Session, client_auth_headers, test_review):
     update_data = {
@@ -286,6 +347,7 @@ def test_update_review_success(db_session: Session, client_auth_headers, test_re
     db_session.refresh(test_review)
     assert test_review.text == update_data["text"]
 
+
 def test_update_review_unauthorized(db_session: Session, dispatcher_auth_headers, test_review):
     update_data = {"text": "Should fail"}
 
@@ -297,6 +359,7 @@ def test_update_review_unauthorized(db_session: Session, dispatcher_auth_headers
 
     assert response.status_code == 403
 
+
 def test_delete_review_success(db_session: Session, client_auth_headers, test_review):
     response = client.delete(
         f"/reviews/{test_review.id}",
@@ -306,6 +369,7 @@ def test_delete_review_success(db_session: Session, client_auth_headers, test_re
     assert response.status_code == 204
     assert db_session.query(Review).filter_by(id=test_review.id).first() is None
 
+
 def test_delete_review_unauthorized(db_session: Session, dispatcher_auth_headers, test_review):
     response = client.delete(
         f"/reviews/{test_review.id}",
@@ -314,6 +378,7 @@ def test_delete_review_unauthorized(db_session: Session, dispatcher_auth_headers
 
     assert response.status_code == 403
     assert db_session.query(Review).filter_by(id=test_review.id).first() is not None
+
 
 def test_get_my_reviews(db_session: Session, client_auth_headers, test_review, test_driver):
     other_client = Client(
@@ -326,10 +391,26 @@ def test_get_my_reviews(db_session: Session, client_auth_headers, test_review, t
     db_session.add(other_client)
     db_session.commit()
 
+    pickup_location = Location(
+        latitude=50.4600,
+        longitude=30.5200,
+        address="789 New St, Kyiv"
+    )
+    dropoff_location = Location(
+        latitude=50.4700,
+        longitude=30.5300,
+        address="101 New Ave, Kyiv"
+    )
+    db_session.add_all([pickup_location, dropoff_location])
+    db_session.commit()
+
     delivery = Delivery(
-        **TEST_DELIVERY,
+        package_details="Other package",
+        status="Pending",
         driver_id=test_driver.id,
-        client_id=other_client.id
+        client_id=other_client.id,
+        pickup_location_id=pickup_location.id,
+        dropoff_location_id=dropoff_location.id
     )
     db_session.add(delivery)
     db_session.commit()

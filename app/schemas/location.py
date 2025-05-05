@@ -6,7 +6,6 @@ from typing import Optional
 class LocationBase(BaseModel):
     latitude: float
     longitude: float
-    address: Optional[str] = None
 
 
 class LocationCreate(LocationBase):
@@ -16,5 +15,6 @@ class LocationCreate(LocationBase):
 class LocationOut(LocationBase):
     id: int
     created_at: datetime
+    address: Optional[str] = None
 
     model_config = ConfigDict(from_attributes=True)

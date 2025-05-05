@@ -1,8 +1,10 @@
 from datetime import datetime
 from enum import Enum
 from typing import Optional
+
 from pydantic import BaseModel, ConfigDict
 
+from app.schemas.location import LocationCreate, LocationOut
 from app.schemas.review import ReviewRead
 
 
@@ -16,22 +18,21 @@ class DeliveryStatus(str, Enum):
 class DeliveryBase(BaseModel):
     driver_id: Optional[int] = None
     client_id: Optional[int] = None
-    pickup_location: str
-    dropoff_location: str
     package_details: str
     status: DeliveryStatus = DeliveryStatus.PENDING
     delivery_notes: Optional[str] = None
 
 
 class DeliveryCreate(DeliveryBase):
-    pass
+    pickup_location: LocationCreate
+    dropoff_location: LocationCreate
 
 
 class DeliveryUpdate(BaseModel):
     driver_id: Optional[int] = None
     client_id: Optional[int] = None
-    pickup_location: Optional[str] = None
-    dropoff_location: Optional[str] = None
+    pickup_location: Optional[LocationCreate] = None
+    dropoff_location: Optional[LocationCreate] = None
     package_details: Optional[str] = None
     status: Optional[DeliveryStatus] = None
     delivery_notes: Optional[str] = None
@@ -39,9 +40,13 @@ class DeliveryUpdate(BaseModel):
 
 class DeliveryShow(DeliveryBase):
     id: int
+    pickup_location: LocationOut
+    dropoff_location: LocationOut
     review: Optional[ReviewRead] = None
     created_at: datetime
+
     model_config = ConfigDict(from_attributes=True)
+
 
 class DeliveryStatusUpdate(BaseModel):
     new_status: DeliveryStatus

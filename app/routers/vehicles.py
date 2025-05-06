@@ -11,9 +11,7 @@ router = APIRouter(prefix="/vehicles", tags=["vehicles"])
 
 
 def get_vehicle_service(db: Session = Depends(get_db)) -> VehicleService:
-    from app.repositories.vehicle_repository import VehicleRepository
-    repository = VehicleRepository(db)
-    return VehicleService(repository)
+    return VehicleService(db)
 
 
 @router.post("/",

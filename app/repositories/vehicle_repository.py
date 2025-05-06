@@ -1,5 +1,7 @@
-from typing import Optional, List
+from typing import Optional
+
 from sqlalchemy.orm import Session, joinedload
+
 from app.models import Vehicle
 from app.repositories.abstract_repository import AbstractRepository
 

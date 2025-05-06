@@ -1,7 +1,5 @@
 from typing import Optional, Type
-
 from sqlalchemy.orm import Session
-
 from app.models import LogBreak, Delivery
 from app.repositories.log_break_repository import LogBreakRepository
 from app.schemas.log_break import LogBreakCreate, LogBreakUpdate
@@ -15,7 +13,7 @@ class LogBreakService(AbstractService[LogBreakCreate, int, LogBreak, LogBreakRep
         self._location_service = LocationService(db)
         super().__init__(repository)
 
-    async def create_log_break(
+    def create_log_break(
             self,
             log_break_data: LogBreakCreate,
             driver_id: Optional[int] = None
@@ -29,20 +27,18 @@ class LogBreakService(AbstractService[LogBreakCreate, int, LogBreak, LogBreakRep
                 .first()
             if not delivery or delivery.driver_id != driver_id:
                 raise ValueError("Delivery not found or not assigned to you")
-
-        location = await self._location_service.create(log_break_data.location)
-
+        location = self._location_service.create(log_break_data.location)
         break_dict = log_break_data.model_dump(exclude={'location'})
         break_dict['location_id'] = location.id
-        return await self.create(break_dict)
+        return self.repository.create(break_dict)
 
-    async def update_log_break(
+    def update_log_break(
             self,
             break_id: int,
             break_data: LogBreakUpdate,
             driver_id: Optional[int] = None
     ) -> Optional[LogBreak]:
-        log_break = await self.get(break_id)
+        log_break = self.get(break_id)
         if not log_break:
             return None
 
@@ -60,16 +56,19 @@ class LogBreakService(AbstractService[LogBreakCreate, int, LogBreak, LogBreakRep
         update_data = break_data.model_dump(exclude_unset=True, exclude={'location'})
 
         if break_data.location:
-            location = await self._location_service.update(
+            location = self._location_service.update(
                 log_break.location_id,
                 break_data.location
             )
             if not location:
                 return None
 
-        return await self.update(break_id, update_data)
+        return self.repository.update(break_id, update_data)
 
-    async def get_driver_log_breaks(
+    def delete(self, id: int) -> bool:
+        return self.repository.delete(id)
+
+    def get_driver_log_breaks(
             self,
             driver_id: int,
             skip: int = 0,

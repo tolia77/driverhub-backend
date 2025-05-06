@@ -9,12 +9,12 @@ class LocationService:
     def __init__(self, db: Session):
         self.repository = LocationRepository(db)
 
-    async def create(self, location_data: LocationCreate) -> Location:
+    def create(self, location_data: LocationCreate) -> Location:
         location = Location(**location_data.model_dump())
         location.address = location.get_address()
-        return self.repository.create(location.model_dump())
+        return self.repository.create(location)
 
-    async def update(self, location_id: int, location_data: LocationCreate) -> Optional[Location]:
+    def update(self, location_id: int, location_data: LocationCreate) -> Optional[Location]:
         location = self.repository.get(location_id)
         if not location:
             return None
@@ -27,6 +27,6 @@ class LocationService:
         self.repository.db.refresh(location)
         return location
 
-    async def get(self, location_id: int) -> Optional[LocationOut]:
+    def get(self, location_id: int) -> Optional[LocationOut]:
         location = self.repository.get(location_id)
         return LocationOut.model_validate(location) if location else None

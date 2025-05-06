@@ -115,7 +115,7 @@ def test_create_vehicle_duplicate_license_plate(db_session: Session, test_vehicl
     )
 
     assert response.status_code == 400
-    assert "already exists" in response.json()["detail"]
+    assert "already used" in response.json()["detail"]
 
 
 def test_list_vehicles(db_session: Session, test_vehicle, dispatcher_auth_headers):
@@ -191,7 +191,7 @@ def test_update_vehicle_duplicate_license_plate(db_session: Session, test_vehicl
     )
 
     assert response.status_code == 400
-    assert "already in use" in response.json()["detail"]
+    assert "already used" in response.json()["detail"]
 
 
 def test_delete_vehicle_success(db_session: Session, test_vehicle, dispatcher_auth_headers):

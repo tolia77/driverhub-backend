@@ -23,7 +23,7 @@ def create_vehicle(
         service: VehicleService = Depends(get_vehicle_service)
 ):
     try:
-        new_vehicle = service.create_vehicle(vehicle)
+        new_vehicle = service.create(vehicle)
         return new_vehicle
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
@@ -73,7 +73,7 @@ def update_vehicle(
         service: VehicleService = Depends(get_vehicle_service)
 ):
     try:
-        updated_vehicle = service.update_vehicle(vehicle_id, vehicle_update)
+        updated_vehicle = service.update(vehicle_id, vehicle_update)
         if not updated_vehicle:
             raise HTTPException(status_code=404, detail="Vehicle not found")
         return updated_vehicle

@@ -23,7 +23,7 @@ def create_log_break(
         current_user: dict = Depends(get_current_user)
 ):
     try:
-        new_log_break = service.create_log_break(log_break_data, current_user["id"])
+        new_log_break = service.create(log_break_data, current_user["id"])
         return new_log_break
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
@@ -61,7 +61,7 @@ def update_log_break(
         current_user: dict = Depends(get_current_user)
 ):
     try:
-        updated_break = service.update_log_break(
+        updated_break = service.update(
             log_break_id,
             log_break_data,
             current_user["id"]

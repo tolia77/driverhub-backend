@@ -31,7 +31,8 @@ class AbstractService(Generic[T, K, M, R], ABC):
         )
 
     def create(self, data: T) -> M:
-        return self.repository.create(data.dict())
+        model = self._create_model_from_data(data)
+        return self.repository.create(model)
 
     def update(self, id: K, data: T) -> Optional[M]:
         return self.repository.update(id, data.dict(exclude_unset=True))
@@ -44,3 +45,6 @@ class AbstractService(Generic[T, K, M, R], ABC):
 
     def exists(self, id: K) -> bool:
         return self.repository.exists(id)
+
+    def _create_model_from_data(self, data: T) -> M:
+        return M(**data.model_dump())

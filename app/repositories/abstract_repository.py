@@ -47,8 +47,7 @@ class AbstractRepository(Generic[M, K]):
 
         return query.offset(skip).limit(limit).all()
 
-    def create(self, data: Dict[str, Any]) -> M:
-        db_obj = self.model(**data)
+    def create(self, db_obj: M) -> M:
         self.db.add(db_obj)
         self.db.commit()
         self.db.refresh(db_obj)

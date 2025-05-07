@@ -14,13 +14,13 @@ class VehicleService(AbstractService[VehicleCreate, int, Vehicle, VehicleReposit
         repository = VehicleRepository(db)
         super().__init__(repository)
 
-    def create_vehicle(self, vehicle_data: VehicleCreate) -> Vehicle:
+    def create(self, vehicle_data: VehicleCreate) -> Vehicle:
         if self._license_plate_exists(vehicle_data.license_plate):
             raise ValueError("License plate is already used")
 
-        return self.create(vehicle_data)
+        return super().create(vehicle_data)
 
-    def update_vehicle(
+    def update(
             self,
             vehicle_id: int,
             vehicle_data: VehicleUpdate
@@ -33,7 +33,7 @@ class VehicleService(AbstractService[VehicleCreate, int, Vehicle, VehicleReposit
             if existing and existing.id != vehicle_id:
                 raise ValueError("License plate is already used")
 
-        return self.update(vehicle_id, vehicle_data)
+        return super().update(vehicle_id, vehicle_data)
 
     def _license_plate_exists(self, license_plate: str) -> bool:
         return self.repository.get_by_license_plate(license_plate) is not None

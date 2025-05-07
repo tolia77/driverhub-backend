@@ -10,7 +10,8 @@ R = TypeVar('R', bound=AbstractRepository)
 
 
 class AbstractService(Generic[T, K, M, R], ABC):
-    def __init__(self, repository: R):
+    def __init__(self, repository: R, model: type[M]):
+        self.model = model
         self.repository = repository
 
     def get(self, id: K) -> Optional[M]:
@@ -47,4 +48,5 @@ class AbstractService(Generic[T, K, M, R], ABC):
         return self.repository.exists(id)
 
     def _create_model_from_data(self, data: T) -> M:
-        return M(**data.model_dump())
+        data_dict = data.dict(exclude_unset=True)
+        return self.model(**data_dict)

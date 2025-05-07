@@ -12,7 +12,7 @@ from app.services.abstract_service import AbstractService
 class VehicleService(AbstractService[VehicleCreate, int, Vehicle, VehicleRepository]):
     def __init__(self, db: Session):
         repository = VehicleRepository(db)
-        super().__init__(repository)
+        super().__init__(repository, Vehicle)
 
     def create(self, vehicle_data: VehicleCreate) -> Vehicle:
         if self._license_plate_exists(vehicle_data.license_plate):

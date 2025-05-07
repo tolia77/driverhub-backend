@@ -26,6 +26,8 @@ def create_log_break(
         new_log_break = service.create(log_break_data, current_user["id"])
         return new_log_break
     except ValueError as e:
+        if "not assigned to you" in str(e):
+            raise HTTPException(status_code=404, detail=str(e))
         raise HTTPException(status_code=400, detail=str(e))
 
 

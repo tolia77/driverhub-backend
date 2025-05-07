@@ -11,7 +11,7 @@ class LogBreakService(AbstractService[LogBreakCreate, int, LogBreak, LogBreakRep
     def __init__(self, db: Session):
         repository = LogBreakRepository(db)
         self._location_service = LocationService(db)
-        super().__init__(repository)
+        super().__init__(repository, LogBreak)
 
     def create(
             self,
@@ -30,7 +30,10 @@ class LogBreakService(AbstractService[LogBreakCreate, int, LogBreak, LogBreakRep
         location = self._location_service.create(log_break_data.location)
         break_dict = log_break_data.model_dump(exclude={'location'})
         break_dict['location_id'] = location.id
-        return self.repository.create(break_dict)
+
+        log_break = LogBreak(**break_dict)
+
+        return self.repository.create(log_break)
 
     def update(
             self,
@@ -64,7 +67,6 @@ class LogBreakService(AbstractService[LogBreakCreate, int, LogBreak, LogBreakRep
                 return None
 
         return self.repository.update(break_id, update_data)
-
 
     def get_driver_log_breaks(
             self,

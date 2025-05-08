@@ -6,10 +6,10 @@ from app.schemas.vehicle import VehicleCreate, VehicleUpdate
 from app.models import Vehicle
 from app.repositories.vehicle_repository import VehicleRepository
 
-from app.services.abstract_service import AbstractService
+from app.services.base_service import BaseService
 
 
-class VehicleService(AbstractService[VehicleCreate, int, Vehicle, VehicleRepository]):
+class VehicleService(BaseService[VehicleCreate, int, Vehicle, VehicleRepository]):
     def __init__(self, db: Session):
         repository = VehicleRepository(db)
         super().__init__(repository, Vehicle)

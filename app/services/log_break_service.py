@@ -3,11 +3,11 @@ from sqlalchemy.orm import Session
 from app.models import LogBreak, Delivery
 from app.repositories.log_break_repository import LogBreakRepository
 from app.schemas.log_break import LogBreakCreate, LogBreakUpdate
-from app.services.abstract_service import AbstractService
+from app.services.base_service import BaseService
 from app.services.location_service import LocationService
 
 
-class LogBreakService(AbstractService[LogBreakCreate, int, LogBreak, LogBreakRepository]):
+class LogBreakService(BaseService[LogBreakCreate, int, LogBreak, LogBreakRepository]):
     def __init__(self, db: Session):
         repository = LogBreakRepository(db)
         self._location_service = LocationService(db)

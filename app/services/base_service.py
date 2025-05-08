@@ -1,15 +1,14 @@
-from abc import ABC
 from typing import Generic, TypeVar, List, Optional, Any
 
-from app.repositories.abstract_repository import AbstractRepository
+from app.repositories.base_repository import BaseRepository
 
 T = TypeVar('T')
 K = TypeVar('K')
 M = TypeVar('M')
-R = TypeVar('R', bound=AbstractRepository)
+R = TypeVar('R', bound=BaseRepository)
 
 
-class AbstractService(Generic[T, K, M, R], ABC):
+class BaseService(Generic[T, K, M, R]):
     def __init__(self, repository: R, model: type[M]):
         self.model = model
         self.repository = repository

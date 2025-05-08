@@ -3,10 +3,10 @@ from typing import Optional
 from sqlalchemy.orm import Session, joinedload
 
 from app.models import Vehicle
-from app.repositories.abstract_repository import AbstractRepository
+from app.repositories.base_repository import BaseRepository
 
 
-class VehicleRepository(AbstractRepository[Vehicle, int]):
+class VehicleRepository(BaseRepository[Vehicle, int]):
     def __init__(self, db: Session):
         super().__init__(db, Vehicle)
         self.with_load(joinedload(Vehicle.driver))

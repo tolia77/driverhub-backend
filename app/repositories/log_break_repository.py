@@ -1,10 +1,10 @@
 from typing import List, Optional, Type
 from sqlalchemy.orm import Session, joinedload
 from app.models import LogBreak, Delivery
-from app.repositories.abstract_repository import AbstractRepository
+from app.repositories.base_repository import BaseRepository
 
 
-class LogBreakRepository(AbstractRepository[LogBreak, int]):
+class LogBreakRepository(BaseRepository[LogBreak, int]):
     def __init__(self, db: Session):
         super().__init__(db, LogBreak)
         self.with_load(

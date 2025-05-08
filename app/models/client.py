@@ -10,7 +10,7 @@ class Client(User):
     id: Mapped[int] = mapped_column(ForeignKey('users.id'), primary_key=True)
     phone_number: Mapped[str] = mapped_column(nullable=False)
     deliveries: Mapped[list["Delivery"]] = relationship("Delivery", back_populates="client")
-
+    #TODO: add reviews relationship
     __mapper_args__ = {
         'polymorphic_identity': 'client',
     }

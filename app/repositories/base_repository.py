@@ -7,13 +7,13 @@ M = TypeVar('M')
 K = TypeVar('K')
 
 
-class AbstractRepository(Generic[M, K]):
+class BaseRepository(Generic[M, K]):
     def __init__(self, db: Session, model: type[M]):
         self.db = db
         self.model = model
         self._default_load_options = []
 
-    def with_load(self, *options: Any) -> 'AbstractRepository':
+    def with_load(self, *options: Any) -> 'BaseRepository':
         self._default_load_options.extend(options)
         return self
 

@@ -34,7 +34,7 @@ class Location(Base):
             "lon": self.longitude,
             "format": "json"
         }
-        headers = {"User-Agent": "driverhub/1.0"}
+        headers = {"User-Agent": "drivetrack/1.0"}
         response = requests.get(url, params=params, headers=headers)
         if response.status_code != 200:
             return "Unknown location"

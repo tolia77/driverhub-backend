@@ -4,6 +4,8 @@ from typing import Optional
 
 from pydantic import BaseModel, ConfigDict
 
+from app.schemas.client import ClientOut
+from app.schemas.driver import DriverRead
 from app.schemas.location import LocationCreate, LocationOut
 from app.schemas.review import ReviewRead
 
@@ -44,6 +46,8 @@ class DeliveryShow(DeliveryBase):
     dropoff_location: LocationOut
     review: Optional[ReviewRead] = None
     created_at: datetime
+    driver: Optional[DriverRead] = None
+    client: Optional[ClientOut] = None
 
     model_config = ConfigDict(from_attributes=True)
 

@@ -67,6 +67,8 @@ def list_deliveries(
 ):
     return (db.query(Delivery)
             .options(joinedload(Delivery.review),
+                     joinedload(Delivery.driver),
+                     joinedload(Delivery.client),
                      joinedload(Delivery.pickup_location),
                      joinedload(Delivery.dropoff_location))
             .offset(skip).limit(limit).all())
@@ -82,6 +84,8 @@ def get_delivery(
     delivery = (db.query(Delivery)
                 .filter(Delivery.id == delivery_id)
                 .options(joinedload(Delivery.review),
+                         joinedload(Delivery.driver),
+                         joinedload(Delivery.client),
                          joinedload(Delivery.pickup_location),
                          joinedload(Delivery.dropoff_location)).first()
                 )
@@ -202,7 +206,8 @@ def get_my_deliveries(
         current_user: dict = Depends(get_current_user)
 ):
     return db.query(Delivery) \
-        .options(joinedload(Delivery.review),
+        .options(joinedload(Delivery.driver),
+                 joinedload(Delivery.client),
                  joinedload(Delivery.pickup_location),
                  joinedload(Delivery.dropoff_location)) \
         .filter(Delivery.driver_id == current_user["id"]) \

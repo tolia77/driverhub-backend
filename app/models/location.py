@@ -26,6 +26,10 @@ class Location(Base):
         back_populates="dropoff_location",
         foreign_keys="Delivery.dropoff_location_id"
     )
+    breaks: Mapped[List["LogBreak"]] = relationship(
+        "LogBreak",
+        back_populates="location"
+    )
 
     def get_address(self) -> str:
         url = "https://nominatim.openstreetmap.org/reverse"

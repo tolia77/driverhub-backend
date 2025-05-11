@@ -13,6 +13,7 @@ class LogBreak(Base):
     end_time: Mapped[datetime] = mapped_column(DateTime, nullable=False)
     cost: Mapped[float] = mapped_column(Float, nullable=False)
     delivery_id: Mapped[int] = mapped_column(ForeignKey('deliveries.id'), nullable=False)
+    created_at: Mapped[datetime] = mapped_column(default=datetime.now, nullable=False)
 
     delivery = relationship("Delivery", back_populates="breaks")
     location = relationship("Location")

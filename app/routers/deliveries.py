@@ -12,6 +12,7 @@ from app.schemas.delivery import (
     DeliveryShow,
     DeliveryStatusUpdate
 )
+from app.settings import settings
 from app.utils.email import send_message
 
 router = APIRouter(prefix="/deliveries", tags=["deliveries"])
@@ -176,13 +177,14 @@ def update_delivery_status(
     delivery.status = new_status.new_status
     db.commit()
     db.refresh(delivery)
-    send_message(
-        delivery.client.first_name,
-        delivery.client.last_name,
-        delivery.client.email,
-        "Delivery Status Update",
-        f"Your delivery status has been updated to: {delivery.status.value}"
-    )
+    if settings.app.environment != "test":
+        send_message(
+            delivery.client.first_name,
+            delivery.client.last_name,
+            delivery.client.email,
+            "Delivery Status Update",
+            f"Your delivery status has been updated to: {delivery.status.value}"
+        )
     return delivery
 
 

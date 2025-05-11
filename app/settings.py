@@ -22,10 +22,16 @@ class JWTConfig(BaseConfig):
 class MailgunConfig(BaseConfig):
     mailgun_api_key: str
 
+
+class AppConfig(BaseConfig):
+    environment: str = "production"
+
+
 class Settings(BaseSettings):
     database: DatabaseConfig = Field(default_factory=DatabaseConfig)
     jwt: JWTConfig = Field(default_factory=JWTConfig)
     mailgun: MailgunConfig = Field(default_factory=MailgunConfig)
+    app: AppConfig = Field(default_factory=AppConfig)
 
 
 settings = Settings()

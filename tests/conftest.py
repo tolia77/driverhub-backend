@@ -6,6 +6,15 @@ from app.main import app
 from app.settings import settings
 
 
+@pytest.fixture(scope="function", autouse=True)
+def reload_settings(monkeypatch):
+    monkeypatch.setenv("ENVIRONMENT", "test")
+
+    from importlib import reload
+    import app.settings
+    reload(app.settings)
+
+
 @pytest.fixture(scope="session")
 def engine():
     return create_engine(settings.database.test_database_connection_string)

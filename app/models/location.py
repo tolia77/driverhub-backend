@@ -6,6 +6,7 @@ from sqlalchemy import Float, String
 from sqlalchemy.orm import mapped_column, Mapped, relationship
 
 from app.db import Base
+from app.settings import settings
 
 
 class Location(Base):
@@ -32,6 +33,8 @@ class Location(Base):
     )
 
     def get_address(self) -> str:
+        if settings.app.environment == "test":
+            return "Test Address"
         url = "https://nominatim.openstreetmap.org/reverse"
         params = {
             "lat": self.latitude,

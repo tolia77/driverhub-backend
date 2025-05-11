@@ -12,6 +12,7 @@ from app.schemas.delivery import (
     DeliveryShow,
     DeliveryStatusUpdate
 )
+from app.utils.email import send_message
 
 router = APIRouter(prefix="/deliveries", tags=["deliveries"])
 
@@ -159,7 +160,7 @@ def update_delivery_status(
         db: Session = Depends(get_db),
         current_user: dict = Depends(get_current_user)
 ):
-    delivery = db.query(Delivery).filter(Delivery.id == delivery_id).first()
+    delivery = db.query(Delivery).filter(Delivery.id == delivery_id).options(joinedload(Delivery.client)).first()
     if not delivery:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
@@ -175,6 +176,13 @@ def update_delivery_status(
     delivery.status = new_status.new_status
     db.commit()
     db.refresh(delivery)
+    send_message(
+        delivery.client.first_name,
+        delivery.client.last_name,
+        delivery.client.email,
+        "Delivery Status Update",
+        f"Your delivery status has been updated to: {delivery.status.value}"
+    )
     return delivery
 
 

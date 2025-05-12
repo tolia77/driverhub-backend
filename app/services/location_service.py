@@ -1,13 +1,11 @@
 from sqlalchemy.orm import Session
-from typing import Optional
-
 from app.schemas.location import LocationCreate
 from app.models import Location
 from app.repositories.location_repository import LocationRepository
 from app.services.base_service import BaseService
 
 
-class LocationService(BaseService[LocationCreate, int, Location, LocationRepository]):
+class LocationService(BaseService[LocationCreate, LocationCreate, int, Location, LocationRepository]):
     def __init__(self, db: Session):
         repository = LocationRepository(db)
         super().__init__(repository, Location)

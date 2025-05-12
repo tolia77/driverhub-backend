@@ -1,15 +1,16 @@
-from typing import Generic, TypeVar, List, Optional, Any
-
+from typing import Generic, TypeVar, List, Optional, Any, Type
+from pydantic import BaseModel
 from app.repositories.base_repository import BaseRepository
 
-T = TypeVar('T')
-K = TypeVar('K')
-M = TypeVar('M')
+T = TypeVar('T', bound=BaseModel)  # Create schema type
+U = TypeVar('U', bound=BaseModel)  # Update schema type
+K = TypeVar('K')                   # ID type
+M = TypeVar('M')                   # Model type
 R = TypeVar('R', bound=BaseRepository)
 
 
-class BaseService(Generic[T, K, M, R]):
-    def __init__(self, repository: R, model: type[M]):
+class BaseService(Generic[T, U, K, M, R]):
+    def __init__(self, repository: R, model: Type[M]):
         self.model = model
         self.repository = repository
 
@@ -34,8 +35,9 @@ class BaseService(Generic[T, K, M, R]):
         model = self._create_model_from_data(data)
         return self.repository.create(model)
 
-    def update(self, id: K, data: T) -> Optional[M]:
-        return self.repository.update(id, data.dict(exclude_unset=True))
+    def update(self, id: K, data: U) -> Optional[M]:
+        update_data = data.dict(exclude_unset=True)
+        return self.repository.update(id, update_data)
 
     def delete(self, id: K) -> bool:
         return self.repository.delete(id)

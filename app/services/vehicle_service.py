@@ -1,15 +1,12 @@
 from typing import Optional, List
-
 from sqlalchemy.orm import Session
-
 from app.schemas.vehicle import VehicleCreate, VehicleUpdate
 from app.models import Vehicle
 from app.repositories.vehicle_repository import VehicleRepository
-
 from app.services.base_service import BaseService
 
 
-class VehicleService(BaseService[VehicleCreate, int, Vehicle, VehicleRepository]):
+class VehicleService(BaseService[VehicleCreate, VehicleUpdate, int, Vehicle, VehicleRepository]):
     def __init__(self, db: Session):
         repository = VehicleRepository(db)
         super().__init__(repository, Vehicle)
@@ -17,7 +14,6 @@ class VehicleService(BaseService[VehicleCreate, int, Vehicle, VehicleRepository]
     def create(self, vehicle_data: VehicleCreate) -> Vehicle:
         if self._license_plate_exists(vehicle_data.license_plate):
             raise ValueError("License plate is already used")
-
         return super().create(vehicle_data)
 
     def update(

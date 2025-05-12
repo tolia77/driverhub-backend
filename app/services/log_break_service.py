@@ -7,7 +7,7 @@ from app.services.base_service import BaseService
 from app.services.location_service import LocationService
 
 
-class LogBreakService(BaseService[LogBreakCreate, int, LogBreak, LogBreakRepository]):
+class LogBreakService(BaseService[LogBreakCreate, LogBreakUpdate, int, LogBreak, LogBreakRepository]):
     def __init__(self, db: Session):
         repository = LogBreakRepository(db)
         self._location_service = LocationService(db)
@@ -27,12 +27,12 @@ class LogBreakService(BaseService[LogBreakCreate, int, LogBreak, LogBreakReposit
                 .first()
             if not delivery or delivery.driver_id != driver_id:
                 raise ValueError("Delivery not found or not assigned to you")
+
         location = self._location_service.create(log_break_data.location)
         break_dict = log_break_data.model_dump(exclude={'location'})
         break_dict['location_id'] = location.id
 
         log_break = LogBreak(**break_dict)
-
         return self.repository.create(log_break)
 
     def update(

@@ -39,5 +39,5 @@ class Delivery(Base):
     pickup_location: Mapped["Location"] = relationship("Location", foreign_keys=[pickup_location_id])
     dropoff_location: Mapped["Location"] = relationship("Location", foreign_keys=[dropoff_location_id])
 
-    breaks: Mapped[list["LogBreak"]] = relationship("LogBreak", back_populates="delivery")
-    review: Mapped["Review"] = relationship("Review", back_populates="delivery", uselist=False)
+    breaks: Mapped[list["LogBreak"]] = relationship("LogBreak", back_populates="delivery", cascade="all, delete-orphan")
+    review: Mapped["Review"] = relationship("Review", back_populates="delivery", uselist=False, cascade="all, delete-orphan")

@@ -178,13 +178,16 @@ def update_delivery_status(
     db.commit()
     db.refresh(delivery)
     if settings.app.environment != "test":
-        send_message(
-            delivery.client.first_name,
-            delivery.client.last_name,
-            delivery.client.email,
-            "Delivery Status Update",
-            f"Your delivery status has been updated to: {delivery.status.value}"
-        )
+        try:
+            send_message(
+                delivery.client.first_name,
+                delivery.client.last_name,
+                delivery.client.email,
+                "Delivery Status Update",
+                f"Your delivery status has been updated to: {delivery.status.value}"
+            )
+        except:
+            print("Error sending email")
     return delivery
 
 

@@ -1,73 +1,55 @@
-from typing import List, Optional
-
-from fastapi import APIRouter, status, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
+from typing import List
 
 from app.db import get_db
 from app.dependencies import require_role, get_current_user
-from app.models import Review, Delivery
+from app.models import Delivery
 from app.schemas.review import ReviewCreate, ReviewUpdate, ReviewRead
+from app.services.review_service import ReviewService
 
 router = APIRouter(prefix="/reviews", tags=["reviews"])
 
 
+def get_review_service(db: Session = Depends(get_db)) -> ReviewService:
+    return ReviewService(db)
+
+
 @router.post("/",
-             status_code=status.HTTP_201_CREATED,
              response_model=ReviewRead,
+             status_code=status.HTTP_201_CREATED,
              dependencies=[Depends(require_role("client"))])
 def create_review(
-        review: ReviewCreate,
-        db: Session = Depends(get_db),
-        current_user: dict = Depends(get_current_user)
+        review_data: ReviewCreate,
+        service: ReviewService = Depends(get_review_service),
+        current_user: dict = Depends(get_current_user),
+        db: Session = Depends(get_db)
 ):
-    delivery = db.query(Delivery).filter(
-        Delivery.id == review.delivery_id
-    ).first()
-
-    if not delivery or not (delivery.client_id == current_user["id"] or current_user["type"] == "admin"):
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Delivery not found or not assigned to you"
-        )
-
-    existing_review = db.query(Review).filter(
-        Review.delivery_id == review.delivery_id
-    ).first()
-
-    if existing_review:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Review already exists for this delivery"
-        )
-
-    new_review = Review(
-        delivery_id=review.delivery_id,
-        text=review.text,
-        rating=review.rating
-    )
-
-    db.add(new_review)
-    db.commit()
-    db.refresh(new_review)
-
-    return new_review
+    delivery = db.query(Delivery).filter_by(id=review_data.delivery_id).first()
+    if not delivery or delivery.client_id != current_user["id"]:
+        raise HTTPException(status_code=404, detail="Delivery not found or not assigned to you")
+    try:
+        new_review = service.create(review_data)
+        return new_review
+    except ValueError as e:
+        if "already exists" in str(e):
+            raise HTTPException(status_code=400, detail=str(e))
+        raise HTTPException(status_code=400, detail=str(e))
 
 
 @router.get("/",
             response_model=List[ReviewRead],
             dependencies=[Depends(require_role("dispatcher"))])
 def list_reviews(
-        delivery_id: Optional[int] = None,
+        delivery_id: int | None = None,
         skip: int = 0,
         limit: int = 100,
-        db: Session = Depends(get_db)
+        service: ReviewService = Depends(get_review_service)
 ):
-    query = db.query(Review)
-
-    if delivery_id is not None:
-        query = query.filter(Review.delivery_id == delivery_id)
-
-    return query.offset(skip).limit(limit).all()
+    if delivery_id:
+        review = service.get_by_delivery(delivery_id)
+        return [review] if review else []
+    return service.get_all(skip=skip, limit=limit)
 
 
 @router.get("/{review_id}",
@@ -75,14 +57,11 @@ def list_reviews(
             dependencies=[Depends(require_role("dispatcher"))])
 def get_review(
         review_id: int,
-        db: Session = Depends(get_db)
+        service: ReviewService = Depends(get_review_service)
 ):
-    review = db.query(Review).filter(Review.id == review_id).first()
+    review = service.get(review_id)
     if not review:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Review not found"
-        )
+        raise HTTPException(status_code=404, detail="Review not found")
     return review
 
 
@@ -91,37 +70,16 @@ def get_review(
               dependencies=[Depends(require_role("client"))])
 def update_review(
         review_id: int,
-        review_update: ReviewUpdate,
-        db: Session = Depends(get_db),
-        current_user: dict = Depends(get_current_user)
+        review_data: ReviewUpdate,
+        service: ReviewService = Depends(get_review_service)
 ):
-    review = db.query(Review).filter(Review.id == review_id).first()
-
-    if not review:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Review not found"
-        )
-
-    delivery = db.query(Delivery).filter(
-        Delivery.id == review.delivery_id
-    ).first()
-
-    if not delivery or not (delivery.client_id == current_user["id"] or current_user["type"] == "admin"):
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="You can only update your own reviews"
-        )
-
-    if review_update.text is not None:
-        review.text = review_update.text
-    if review_update.rating is not None:
-        review.rating = review_update.rating
-
-    db.commit()
-    db.refresh(review)
-
-    return review
+    try:
+        updated_review = service.update(review_id, review_data)
+        if not updated_review:
+            raise HTTPException(status_code=404, detail="Review not found")
+        return updated_review
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
 
 
 @router.delete("/{review_id}",
@@ -129,29 +87,14 @@ def update_review(
                dependencies=[Depends(require_role("client"))])
 def delete_review(
         review_id: int,
-        db: Session = Depends(get_db),
-        current_user: dict = Depends(get_current_user)
+        service: ReviewService = Depends(get_review_service)
 ):
-    review = db.query(Review).filter(Review.id == review_id).first()
-
+    review = service.get(review_id)
     if not review:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Review not found"
-        )
+        raise HTTPException(status_code=404, detail="Review not found")
 
-    delivery = db.query(Delivery).filter(
-        Delivery.id == review.delivery_id
-    ).first()
-
-    if not delivery or not (delivery.client_id == current_user["id"] or current_user["type"] == "admin"):
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="You can only delete your own reviews"
-        )
-
-    db.delete(review)
-    db.commit()
+    if not service.delete(review_id):
+        raise HTTPException(status_code=404, detail="Review not found")
 
 
 @router.get("/client/me",
@@ -160,12 +103,7 @@ def delete_review(
 def get_my_reviews(
         skip: int = 0,
         limit: int = 100,
-        db: Session = Depends(get_db),
+        service: ReviewService = Depends(get_review_service),
         current_user: dict = Depends(get_current_user)
 ):
-    return db.query(Review) \
-        .join(Delivery, Review.delivery_id == Delivery.id) \
-        .filter(Delivery.client_id == current_user["id"]) \
-        .offset(skip) \
-        .limit(limit) \
-        .all()
+    return service.get_by_client(client_id=current_user["id"], skip=skip, limit=limit)

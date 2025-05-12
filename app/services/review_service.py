@@ -1,4 +1,4 @@
-from typing import Optional, List
+from typing import Optional, Type
 
 from sqlalchemy.orm import Session
 
@@ -8,28 +8,27 @@ from app.schemas.review import ReviewCreate, ReviewUpdate
 from app.services.base_service import BaseService
 
 
-class ReviewService(BaseService[ReviewCreate, int, Review, ReviewRepository]):
+class ReviewService(BaseService[ReviewCreate, ReviewUpdate, int, Review, ReviewRepository]):
     def __init__(self, db: Session):
         repository = ReviewRepository(db)
         super().__init__(repository, Review)
 
-    def create(self, data: ReviewCreate) -> Review:
-        existing_review = self.repository.get_by_delivery_id(data.delivery_id)
-        if existing_review is not None:
-            raise ValueError("A review for this delivery already exists.")
-        return super().create(data)
+    def create(self, review_data: ReviewCreate) -> Review:
+        if self.repository.exists_for_delivery(review_data.delivery_id):
+            raise ValueError("Review for this delivery already exists")
 
-    def update(self, review_id: int, data: ReviewUpdate) -> Optional[Review]:
-        existing_review = self.get(review_id)
-        if not existing_review:
+        return super().create(review_data)
+
+    def update(self, review_id: int, review_data: ReviewUpdate) -> Optional[Review]:
+        review = self.repository.get(review_id)
+        if not review:
             return None
 
-        if data.delivery_id is not None and data.delivery_id != existing_review.delivery_id:
-            conflicting_review = self.repository.get_by_delivery_id(data.delivery_id)
-            if conflicting_review is not None:
-                raise ValueError("Another review already exists for this delivery.")
+        return super().update(review_id, review_data)
 
-        return super().update(review_id, data)
+    def get_by_delivery(self, delivery_id: int) -> Optional[Review]:
+        return self.repository.get_by_delivery(delivery_id)
 
-    def get_client_reviews(self, client_id: int, skip: int = 0, limit: int = 100) -> List[Review]:
-        return self.repository.get_client_reviews(client_id, skip, limit)
+    def get_by_client(self, client_id: int, skip: int = 0, limit: int = 100) -> list[Type[Review]]:
+        return self.repository.get_by_client(client_id, skip, limit)
+

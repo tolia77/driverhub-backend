@@ -2,10 +2,10 @@ from typing import Generic, TypeVar, List, Optional, Any, Type
 from pydantic import BaseModel
 from app.repositories.base_repository import BaseRepository
 
-T = TypeVar('T', bound=BaseModel)  # Create schema type
-U = TypeVar('U', bound=BaseModel)  # Update schema type
-K = TypeVar('K')                   # ID type
-M = TypeVar('M')                   # Model type
+T = TypeVar('T', bound=BaseModel)
+U = TypeVar('U', bound=BaseModel)
+K = TypeVar('K')
+M = TypeVar('M')
 R = TypeVar('R', bound=BaseRepository)
 
 
@@ -36,7 +36,7 @@ class BaseService(Generic[T, U, K, M, R]):
         return self.repository.create(model)
 
     def update(self, id: K, data: U) -> Optional[M]:
-        update_data = data.dict(exclude_unset=True)
+        update_data = data.model_dump(exclude_unset=True)
         return self.repository.update(id, update_data)
 
     def delete(self, id: K) -> bool:
@@ -49,5 +49,5 @@ class BaseService(Generic[T, U, K, M, R]):
         return self.repository.exists(id)
 
     def _create_model_from_data(self, data: T) -> M:
-        data_dict = data.dict(exclude_unset=True)
+        data_dict = data.model_dump(exclude_unset=True)
         return self.model(**data_dict)
